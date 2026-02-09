@@ -1,4 +1,5 @@
 const { ipcRenderer } = require("electron");
+const dataManager = require("./data-manager");
 
 // ==============
 // Status Manager
@@ -46,10 +47,53 @@ function initialize()
 
 async function setStatus(_, message)
 {
+    // Fix: reduce ui refresh related to status.
+    // Fix: fixed last commit not working.
+    // For some reason, status becomes string(??? cant figure out how), so I changed '===' to '=='
     if (status == message) return;
 
     status = message;
-    // Status update logic will be implemented here
+    document.querySelector("#status").innerHTML = statusTitle[status];
+    document.querySelector("#headerStatusInner").innerHTML = statusTitle[status] + (status != 0 ? " (Click)" : "");
+
+    if (status == 0)
+    {
+        document.querySelector("#headerStatus").classList.remove("errorText");
+        document.querySelector("#headerStatus").classList.remove("workingText");
+        document.querySelector("#headerStatus").classList.add("readyText");
+    }
+    else if (status == 9 || status == 10 || status == 11)
+    {
+        document.querySelector("#headerStatus").classList.add("errorText");
+        document.querySelector("#headerStatus").classList.remove("workingText");
+        document.querySelector("#headerStatus").classList.remove("readyText");
+    }
+    else
+    {
+        document.querySelector("#headerStatus").classList.remove("errorText");
+        document.querySelector("#headerStatus").classList.add("workingText");
+        document.querySelector("#headerStatus").classList.remove("readyText");
+    }
+
+    if (status == 5)
+        document.querySelector("#statusDesc").innerHTML = statusDesc[status][0] + await dataManager.getData("portVTubeStudio") + statusDesc[status][1];
+    else if (status == 9)
+        document.querySelector("#statusDesc").innerHTML = statusDesc[status][0] + await dataManager.getData("portThrower") + statusDesc[status][1];
+    else
+        document.querySelector("#statusDesc").innerHTML = statusDesc[status];
+
+    if (status == 3 || status == 4 || status == 7)
+    {
+        if (status == 7)
+            document.querySelector("#nextCalibrate").querySelector(".innerTopButton").innerText = "Start Calibration";
+        else if (status == 3)
+            document.querySelector("#nextCalibrate").querySelector(".innerTopButton").innerText = "Continue Calibration";
+        else if (status == 4)
+            document.querySelector("#nextCalibrate").querySelector(".innerTopButton").innerText = "Confirm Calibration";
+        document.querySelector("#calibrateButtons").classList.remove("hidden");
+    }
+    else
+        document.querySelector("#calibrateButtons").classList.add("hidden");
 }
 
 function getStatus()
