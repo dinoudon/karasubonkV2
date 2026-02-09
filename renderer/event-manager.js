@@ -6,7 +6,7 @@ const { ipcRenderer } = require("electron");
 // Manages IPC event listeners and communication with main process
 // Also handles custom bonk management
 
-let getData, setData, showPanel, openImagesCustom, openSoundsCustom, assetLoader, openEvents;
+let getData, setData, showPanel, openImagesCustom, openSoundsCustom, assetLoader;
 
 // Variables for redeem data management
 let gettingRedeemData = false, redeemData, cancelledGetRedeemData = false;
@@ -24,7 +24,6 @@ function initialize(dependencies = {})
     if (dependencies.openImagesCustom) openImagesCustom = dependencies.openImagesCustom;
     if (dependencies.openSoundsCustom) openSoundsCustom = dependencies.openSoundsCustom;
     if (dependencies.assetLoader) assetLoader = dependencies.assetLoader;
-    if (dependencies.openEvents) openEvents = dependencies.openEvents;
 }
 
 function setupAuthenticationEvents()
@@ -488,6 +487,196 @@ function testCustomBonk(customName)
     ipcRenderer.send("testCustomBonk", customName);
 }
 
+async function openEvents()
+{
+    const customBonks = await getData("customBonks");
+
+    // Fill redeem rows
+    var redeems = await getData("redeems");
+
+    document.querySelectorAll(".redeemsRow").forEach(element => { element.remove(); });
+
+    redeems.forEach((_, index) =>
+    {
+        var row = document.querySelector("#redeemsRow").cloneNode(true);
+        row.removeAttribute("id");
+        row.classList.add("redeemsRow");
+        row.classList.remove("hidden");
+        document.querySelector("#redeemsRow").after(row);
+
+        row.querySelector(".redeemEnabled").checked = redeems[index].enabled;
+        row.querySelector(".redeemEnabled").addEventListener("change", async () => {
+            var redeems = await getData("redeems");
+            redeems[index].enabled = row.querySelector(".redeemEnabled").checked;
+            setData("redeems", redeems);
+        });
+
+        row.querySelector(".redeemName").innerHTML = redeems[index].name == null ? "<b class=\"errorText\">Unassigned</b>" : redeems[index].name;
+
+        row.querySelector(".redeemID").addEventListener("click", async () => {
+            var redeems = await getData("redeems");
+            row.querySelector(".redeemID").classList.add("hidden");
+            row.querySelector(".redeemCancel").classList.remove("hidden");
+            row.querySelector(".redeemName").innerText = "Listening...";
+            var data = await getRedeemData();
+            if (!wasCancelled())
+            {
+                row.querySelector(".redeemID").classList.remove("hidden");
+                row.querySelector(".redeemCancel").classList.add("hidden");
+                redeems[index].id = data[0];
+                redeems[index].name = data[1];
+                row.querySelector(".redeemName").innerText = data[1];
+                setData("redeems", redeems);
+            }
+        });
+
+        row.querySelector(".redeemCancel").addEventListener("click", async () => {
+            var redeems = await getData("redeems");
+            row.querySelector(".redeemID").classList.remove("hidden");
+            row.querySelector(".redeemCancel").classList.add("hidden");
+
+            row.querySelector(".redeemName").innerHTML = redeems[index].name == null ? "<b class=\"errorText\">Unassigned</b>" : redeems[index].name;
+
+            cancelGetRedeemData();
+        });
+
+        for (var key in customBonks)
+        {
+            var customBonk = document.createElement("option");
+            customBonk.value = key;
+            customBonk.innerText = key;
+            row.querySelector(".bonkType").appendChild(customBonk);
+        }
+
+        row.querySelector(".bonkType").value = redeems[index].bonkType;
+        row.querySelector(".bonkType").addEventListener("change", async () => {
+            var redeems = await getData("redeems");
+            redeems[index].bonkType = row.querySelector(".bonkType").value;
+            setData("redeems", redeems);
+        });
+
+        row.querySelector(".redeemRemove").addEventListener("click", async () => {
+            var redeems = await getData("redeems");
+            redeems.splice(index, 1);
+            setData("redeems", redeems);
+            openEvents();
+        });
+    });
+
+    // Fill command rows
+    var commands = await getData("commands");
+
+    document.querySelectorAll(".commandsRow").forEach(element => { element.remove(); });
+
+    commands.forEach((_, index) =>
+    {
+        var row = document.querySelector("#commandsRow").cloneNode(true);
+        row.removeAttribute("id");
+        row.classList.add("commandsRow");
+        row.classList.remove("hidden");
+        document.querySelector("#commandsRow").after(row);
+
+        row.querySelector(".commandEnabled").checked = commands[index].enabled;
+        row.querySelector(".commandEnabled").addEventListener("change", async () => {
+            var commands = await getData("commands");
+            commands[index].enabled = row.querySelector(".commandEnabled").checked;
+            setData("commands", commands);
+        });
+
+        row.querySelector(".commandModOnly").checked = commands[index].modOnly;
+        row.querySelector(".commandModOnly").addEventListener("change", async () => {
+            commands[index].modOnly = row.querySelector(".commandModOnly").checked;
+            setData("commands", commands);
+        });
+
+        row.querySelector(".commandName").value = commands[index].name;
+        row.querySelector(".commandName").addEventListener("change", async () => {
+            var commands = await getData("commands");
+            commands[index].name = row.querySelector(".commandName").value;
+            setData("commands", commands);
+        });
+
+        row.querySelector(".commandCooldown").value = commands[index].cooldown;
+        row.querySelector(".commandCooldown").addEventListener("change", async () => {
+            var commands = await getData("commands");
+            commands[index].cooldown = row.querySelector(".commandCooldown").value;
+            setData("commands", commands);
+        });
+
+        for (var key in customBonks)
+        {
+            var customBonk = document.createElement("option");
+            customBonk.value = key;
+            customBonk.innerText = key;
+            row.querySelector(".bonkType").appendChild(customBonk);
+        }
+
+        row.querySelector(".bonkType").value = commands[index].bonkType;
+        row.querySelector(".bonkType").addEventListener("change", async () => {
+            var commands = await getData("commands");
+            commands[index].bonkType = row.querySelector(".bonkType").value;
+            setData("commands", commands);
+        });
+
+        row.querySelector(".commandRemove").addEventListener("click", async () => {
+            var commands = await getData("commands");
+            commands.splice(index, 1);
+            setData("commands", commands);
+            openEvents();
+        });
+    });
+
+    var node = document.querySelector("#followType");
+    while (node.childElementCount > 4)
+        node.removeChild(node.lastChild);
+
+    for (var key in customBonks)
+    {
+        var customBonk = document.createElement("option");
+        customBonk.value = key;
+        customBonk.innerText = key;
+        node.appendChild(customBonk);
+    }
+
+    // Update Sub and Gift Sub drop-downs
+    node = document.querySelector("#subType");
+    while (node.childElementCount > 4)
+        node.removeChild(node.lastChild);
+
+    for (var key in customBonks)
+    {
+        var customBonk = document.createElement("option");
+        customBonk.value = key;
+        customBonk.innerText = key;
+        node.appendChild(customBonk);
+    }
+
+    node = document.querySelector("#subGiftType");
+    while (node.childElementCount > 4)
+        node.removeChild(node.lastChild);
+
+    for (var key in customBonks)
+    {
+        var customBonk = document.createElement("option");
+        customBonk.value = key;
+        customBonk.innerText = key;
+        node.appendChild(customBonk);
+    }
+
+    // Update Charity drop-down
+    node = document.querySelector("#charityType");
+    while (node.childElementCount > 4)
+        node.removeChild(node.lastChild);
+
+    for (var key in customBonks)
+    {
+        var customBonk = document.createElement("option");
+        customBonk.value = key;
+        customBonk.innerText = key;
+        node.appendChild(customBonk);
+    }
+}
+
 module.exports = {
     initialize,
     setupAuthenticationEvents,
@@ -502,5 +691,6 @@ module.exports = {
     newCommand,
     getRedeemData,
     cancelGetRedeemData,
-    wasCancelled
+    wasCancelled,
+    openEvents
 };
