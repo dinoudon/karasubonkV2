@@ -306,11 +306,103 @@ function hideCalibrationButtons()
     // Calibration button hiding logic will be implemented here
 }
 
+// Load the requested data and apply it to the relevant settings field
+async function loadData(field)
+{
+    const { getData, setData } = dataManager;
+
+    // Enable physics simulation for all users upon updating to 1.19
+    if (field == "physicsSim")
+    {
+        var didPhysicsUpdate = await getData("didPhysicsUpdate");
+        if (didPhysicsUpdate == null)
+        {
+            setData("physicsSim", true);
+            setData("didPhysicsUpdate", true);
+        }
+    }
+
+    const thisData = await getData(field);
+    if (thisData != null)
+    {
+        if (document.querySelector("#" + field).type == "checkbox")
+            document.querySelector("#" + field).checked = thisData;
+        else
+            document.querySelector("#" + field).value = thisData;
+    }
+    else
+    {
+        const node = document.querySelector("#" + field);
+        const val = node.type == "checkbox" ? node.checked : (node.type == "number" ? parseFloat(node.value) : node.value);
+        setData(field, val);
+    }
+}
+
+// Load all settings from data
+async function loadAllSettings()
+{
+    await loadData("followEnabled");
+    await loadData("subEnabled");
+    await loadData("subGiftEnabled");
+    await loadData("charityEnabled");
+    await loadData("bitsEnabled");
+    await loadData("raidEnabled");
+
+    await loadData("followType");
+    await loadData("subType");
+    await loadData("subGiftType");
+    await loadData("charityType");
+    await loadData("bitsMinDonation");
+    await loadData("bitsMaxBarrageCount");
+    await loadData("raidMinRaiders");
+    await loadData("raidMinBarrageCount");
+    await loadData("raidMaxBarrageCount");
+
+    await loadData("followCooldown");
+    await loadData("subCooldown");
+    await loadData("subGiftCooldown");
+    await loadData("charityCooldown");
+    await loadData("bitsCooldown");
+    await loadData("raidCooldown");
+    await loadData("bitsOnlySingle");
+    await loadData("raidEmotes");
+
+    await loadData("barrageCount");
+    await loadData("barrageFrequency");
+    await loadData("throwDuration");
+    await loadData("returnSpeed");
+    await loadData("throwAngleMin");
+    await loadData("throwAngleMax");
+    await loadData("throwDirection");
+    await loadData("physicsSim");
+    await loadData("physicsFPS");
+    await loadData("physicsGravity");
+    await loadData("physicsReverse");
+    await loadData("physicsRotate");
+    await loadData("physicsHorizontal");
+    await loadData("physicsVertical");
+    await loadData("spinSpeedMin");
+    await loadData("spinSpeedMax");
+    await loadData("closeEyes");
+    await loadData("openEyes");
+    await loadData("itemScaleMin");
+    await loadData("itemScaleMax");
+    await loadData("delay");
+    await loadData("volume");
+    await loadData("portThrower");
+    await loadData("portVTubeStudio");
+    await loadData("ipThrower");
+    await loadData("ipVTubeStudio");
+    await loadData("minimizeToTray");
+}
+
 module.exports = {
     initialize,
     setupUIEventListeners,
     updateStatusDisplay,
     updateUsernameDisplay,
     showCalibrationButtons,
-    hideCalibrationButtons
+    hideCalibrationButtons,
+    loadData,
+    loadAllSettings
 };

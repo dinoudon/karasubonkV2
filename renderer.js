@@ -569,36 +569,6 @@ async function openBitSounds()
 // ----
 // Now handled by data-manager module
 
-// Load the requested data and apply it to the relevant settings field
-async function loadData(field)
-{
-    // Enable physics simulation for all users upon updating to 1.19
-    if (field == "physicsSim")
-    {
-        var didPhysicsUpdate = await getData("didPhysicsUpdate");
-        if (didPhysicsUpdate == null)
-        {
-            setData("physicsSim", true);
-            setData("didPhysicsUpdate", true);
-        }
-    }
-
-    const thisData = await getData(field);
-    if (thisData != null)
-    {
-        if (document.querySelector("#" + field).type == "checkbox")
-            document.querySelector("#" + field).checked = thisData;
-        else
-            document.querySelector("#" + field).value = thisData;
-    }
-    else
-    {
-        const node = document.querySelector("#" + field);
-        const val = node.type == "checkbox" ? node.checked : (node.type == "number" ? parseFloat(node.value) : node.value);
-        setData(field, val);
-    }
-}
-
 // Place all settings from data into the proper location on load
 window.onload = async function()
 {
@@ -817,59 +787,8 @@ window.onload = async function()
 
     // END UPDATING
 
-    loadData("followEnabled");
-    loadData("subEnabled");
-    loadData("subGiftEnabled");
-    loadData("charityEnabled");
-    loadData("bitsEnabled");
-    loadData("raidEnabled");
-
-    loadData("followType");
-    loadData("subType");
-    loadData("subGiftType");
-    loadData("charityType");
-    loadData("bitsMinDonation");
-    loadData("bitsMaxBarrageCount");
-    loadData("raidMinRaiders");
-    loadData("raidMinBarrageCount");
-    loadData("raidMaxBarrageCount");
-
-    loadData("followCooldown");
-    loadData("subCooldown");
-    loadData("subGiftCooldown");
-    loadData("charityCooldown");
-    loadData("bitsCooldown");
-    loadData("raidCooldown");
-    loadData("bitsOnlySingle");
-    loadData("raidEmotes");
-
-    loadData("barrageCount");
-    loadData("barrageFrequency");
-    loadData("throwDuration");
-    loadData("returnSpeed");
-    loadData("throwAngleMin");
-    loadData("throwAngleMax");
-    loadData("throwDirection");
-    loadData("physicsSim");
-    loadData("physicsFPS");
-    loadData("physicsGravity");
-    loadData("physicsReverse");
-    loadData("physicsRotate");
-    loadData("physicsHorizontal");
-    loadData("physicsVertical");
-    loadData("spinSpeedMin");
-    loadData("spinSpeedMax");
-    loadData("closeEyes");
-    loadData("openEyes");
-    loadData("itemScaleMin");
-    loadData("itemScaleMax");
-    loadData("delay");
-    loadData("volume");
-    loadData("portThrower");
-    loadData("portVTubeStudio");
-    loadData("ipThrower");
-    loadData("ipVTubeStudio");
-    loadData("minimizeToTray");
+    // Load all settings via ui-controller
+    await uiController.loadAllSettings();
 
     assetLoader.openImages();
     openBitImages();
