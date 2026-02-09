@@ -36,7 +36,8 @@ eventManager.initialize({
     showPanel: (panel, stack) => { showPanel(panel, stack); },
     openImagesCustom: (customName) => { openImagesCustom(customName); },
     openSoundsCustom: (customName) => { openSoundsCustom(customName); },
-    assetLoader: assetLoader
+    assetLoader: assetLoader,
+    openEvents: () => { openEvents(); }
 });
 
 document.querySelector("#logout").addEventListener("click", () => {
@@ -658,62 +659,9 @@ async function openBitSounds()
 
 document.querySelector("#bonksAdd").addEventListener("click", eventManager.addBonk);
 
-document.querySelector("#redeemAdd").addEventListener("click", newRedeem);
+document.querySelector("#redeemAdd").addEventListener("click", eventManager.newRedeem);
 
-// Create a new redeem event
-async function newRedeem()
-{
-    var redeems = await getData("redeems");
-
-    redeems.push({
-        "enabled": true,
-        "id": null,
-        "name": null,
-        "bonkType": "single"
-    });
-
-    setData("redeems", redeems);
-
-    openEvents();
-}
-
-document.querySelector("#commandAdd").addEventListener("click", newCommand);
-
-// Create a new command event
-async function newCommand()
-{
-    var commands = await getData("commands");
-
-    commands.push({
-        "enabled": true,
-        "modOnly": false,
-        "name": "",
-        "cooldown": 0,
-        "bonkType": "single"
-    });
-
-    setData("commands", commands);
-
-    openEvents();
-}
-
-var gettingRedeemData = false, redeemData, cancelledGetRedeemData = false;
-async function getRedeemData()
-{
-    gettingRedeemData = true;
-    cancelledGetRedeemData = false;
-    ipcRenderer.send("listenRedeemStart");
-
-    while (gettingRedeemData)
-        await new Promise(resolve => setTimeout(resolve, 10));
-
-    return redeemData;
-}
-
-ipcRenderer.on("redeemData", (event, message) => {
-    redeemData = message;
-    gettingRedeemData = false;
-});
+document.querySelector("#commandAdd").addEventListener("click", eventManager.newCommand);
 
 async function openEvents()
 {
@@ -746,8 +694,8 @@ async function openEvents()
             row.querySelector(".redeemID").classList.add("hidden");
             row.querySelector(".redeemCancel").classList.remove("hidden");
             row.querySelector(".redeemName").innerText = "Listening...";
-            var data = await getRedeemData();
-            if (!cancelledGetRedeemData)
+            var data = await eventManager.getRedeemData();
+            if (!eventManager.wasCancelled())
             {
                 row.querySelector(".redeemID").classList.remove("hidden");
                 row.querySelector(".redeemCancel").classList.add("hidden");
@@ -762,12 +710,10 @@ async function openEvents()
             var redeems = await getData("redeems");
             row.querySelector(".redeemID").classList.remove("hidden");
             row.querySelector(".redeemCancel").classList.add("hidden");
-            
+
             row.querySelector(".redeemName").innerHTML = redeems[index].name == null ? "<b class=\"errorText\">Unassigned</b>" : redeems[index].name;
 
-            cancelledGetRedeemData = true;
-            gettingRedeemData = false;
-            ipcRenderer.send("listenRedeemCancel");
+            eventManager.cancelGetRedeemData();
         });
 
         for (var key in customBonks)

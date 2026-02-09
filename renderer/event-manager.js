@@ -6,12 +6,16 @@ const { ipcRenderer } = require("electron");
 // Manages IPC event listeners and communication with main process
 // Also handles custom bonk management
 
-let getData, setData, showPanel, openImagesCustom, openSoundsCustom, assetLoader;
+let getData, setData, showPanel, openImagesCustom, openSoundsCustom, assetLoader, openEvents;
+
+// Variables for redeem data management
+let gettingRedeemData = false, redeemData, cancelledGetRedeemData = false;
 
 function initialize(dependencies = {})
 {
     setupAuthenticationEvents();
     setupLinkEvents();
+    setupRedeemDataListener();
 
     // Store dependencies for bonk management functions
     if (dependencies.getData) getData = dependencies.getData;
@@ -20,6 +24,7 @@ function initialize(dependencies = {})
     if (dependencies.openImagesCustom) openImagesCustom = dependencies.openImagesCustom;
     if (dependencies.openSoundsCustom) openSoundsCustom = dependencies.openSoundsCustom;
     if (dependencies.assetLoader) assetLoader = dependencies.assetLoader;
+    if (dependencies.openEvents) openEvents = dependencies.openEvents;
 }
 
 function setupAuthenticationEvents()
@@ -32,6 +37,73 @@ function setupAuthenticationEvents()
 function setupLinkEvents()
 {
     // Link event handling will be implemented here
+}
+
+function setupRedeemDataListener()
+{
+    ipcRenderer.on("redeemData", (event, message) => {
+        redeemData = message;
+        gettingRedeemData = false;
+    });
+}
+
+// Create a new redeem event
+async function newRedeem()
+{
+    var redeems = await getData("redeems");
+
+    redeems.push({
+        "enabled": true,
+        "id": null,
+        "name": null,
+        "bonkType": "single"
+    });
+
+    setData("redeems", redeems);
+
+    openEvents();
+}
+
+// Create a new command event
+async function newCommand()
+{
+    var commands = await getData("commands");
+
+    commands.push({
+        "enabled": true,
+        "modOnly": false,
+        "name": "",
+        "cooldown": 0,
+        "bonkType": "single"
+    });
+
+    setData("commands", commands);
+
+    openEvents();
+}
+
+async function getRedeemData()
+{
+    gettingRedeemData = true;
+    cancelledGetRedeemData = false;
+    ipcRenderer.send("listenRedeemStart");
+
+    while (gettingRedeemData)
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+    return redeemData;
+}
+
+function cancelGetRedeemData()
+{
+    cancelledGetRedeemData = true;
+    gettingRedeemData = false;
+    ipcRenderer.send("listenRedeemCancel");
+}
+
+function wasCancelled()
+{
+    return cancelledGetRedeemData;
 }
 
 async function addBonk()
@@ -420,9 +492,15 @@ module.exports = {
     initialize,
     setupAuthenticationEvents,
     setupLinkEvents,
+    setupRedeemDataListener,
     addBonk,
     bonkDetails,
     openBonks,
     openTestBonks,
-    testCustomBonk
+    testCustomBonk,
+    newRedeem,
+    newCommand,
+    getRedeemData,
+    cancelGetRedeemData,
+    wasCancelled
 };
