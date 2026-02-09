@@ -1,5 +1,6 @@
 const { ipcRenderer } = require("electron");
 const fs = require("fs");
+const path = require('path');
 const dataManager = require("./data-manager");
 
 // ============
@@ -579,12 +580,18 @@ async function openWindupSounds(customName)
  */
 function copyFilesToDirectory()
 {
-    folders.forEach((folder) => {
-        if (!fs.existsSync(__dirname + "/" + folder))
-            fs.mkdirSync(__dirname + "/" + folder);
+    const projectRoot = path.join(__dirname, '..');
 
-        fs.readdirSync(getUserDataPath() + "/" + folder).forEach(file => {
-            fs.copyFileSync(getUserDataPath() + "/" + folder + "/" + file, __dirname + "/" + folder + "/" + file);
+    folders.forEach((folder) => {
+        const folderPath = path.join(projectRoot, folder);
+        if (!fs.existsSync(folderPath))
+            fs.mkdirSync(folderPath);
+
+        fs.readdirSync(path.join(getUserDataPath(), folder)).forEach(file => {
+            fs.copyFileSync(
+                path.join(getUserDataPath(), folder, file),
+                path.join(projectRoot, folder, file)
+            );
         });
     })
 }

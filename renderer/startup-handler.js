@@ -14,6 +14,10 @@ let animationController = null;
 const version = 1.26;
 const folders = ["throws", "impacts", "decals", "windups"];
 
+/**
+ * @description Initializes the startup handler with required dependencies
+ * @param {Object} dependencies - Object containing dataManager, uiController, assetLoader, animationController
+ */
 function initialize(dependencies) {
     dataManager = dependencies.dataManager;
     uiController = dependencies.uiController;
@@ -39,6 +43,11 @@ function setupIPCListeners() {
     });
 }
 
+/**
+ * @description Executes the application startup sequence including directory creation,
+ * asset copying, data migration, settings loading, and version checking
+ * @returns {Promise<void>}
+ */
 async function runStartup() {
     const { getData, setData, getUserDataPath } = dataManager;
 
