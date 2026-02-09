@@ -1,0 +1,42 @@
+
+> karasubonk@1.2.6 start
+> electron-forge start
+
+[STARTED] Checking your system
+[STARTED] Checking git exists
+[STARTED] Checking node version
+[STARTED] Checking packageManager version
+[TITLE] Found git@2.30.1.windows.1
+[SUCCESS] Found git@2.30.1.windows.1
+[TITLE] Found node@22.11.0
+[SUCCESS] Found node@22.11.0
+[TITLE] Found npm@11.8.0
+[SUCCESS] Found npm@11.8.0
+[SUCCESS] Checking your system
+[STARTED] Locating application
+[SUCCESS] Locating application
+[STARTED] Loading configuration
+[SUCCESS] Loading configuration
+[STARTED] Preparing native dependencies
+[TITLE] Preparing native dependencies
+[SUCCESS] Preparing native dependencies
+[STARTED] Running generateAssets hook
+[SUCCESS] Running generateAssets hook
+
+
+App threw an error during load
+Error: Cannot find module '@twurple/api'
+Require stack:
+- D:\Work\vtuber\karasubonkV2\.auto-claude\worktrees\tasks\001-split-renderer-js-into-focused-modules\main.js
+- D:\Work\vtuber\karasubonkV2\node_modules\electron\dist\resources\default_app.asar\main.js
+- 
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1054:15)
+    at n._resolveFilename (node:electron/js2c/browser_init:2:110036)
+    at Module._load (node:internal/modules/cjs/loader:900:27)
+    at f._load (node:electron/js2c/asar_bundle:2:13377)
+    at Module.require (node:internal/modules/cjs/loader:1120:19)
+    at require (node:internal/modules/cjs/helpers:103:18)
+    at Object.<anonymous> (D:\Work\vtuber\karasubonkV2\.auto-claude\worktrees\tasks\001-split-renderer-js-into-focused-modules\main.js:2:23)
+    at Module._compile (node:internal/modules/cjs/loader:1241:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1296:10)
+    at Module.load (node:internal/modules/cjs/loader:1096:32)
