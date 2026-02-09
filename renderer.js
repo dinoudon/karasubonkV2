@@ -2,6 +2,7 @@ const { ipcRenderer } = require("electron");
 const fs = require("fs");
 const dataManager = require("./renderer/data-manager");
 const statusManager = require("./renderer/status-manager");
+const assetLoader = require("./renderer/asset-loader");
 
 const version = 1.26;
 
@@ -19,6 +20,13 @@ const { getData, setData, getUserDataPath } = dataManager;
 // Initialize status manager
 statusManager.initialize();
 
+// Initialize asset loader
+assetLoader.initialize({
+    setCurrentImageIndex: (index) => { currentImageIndex = index; },
+    openImageDetails: () => { openImageDetails(); },
+    showPanel: (panel, stack) => { showPanel(panel, stack); }
+});
+
 document.querySelector("#logout").addEventListener("click", () => {
     ipcRenderer.send("reauthenticate");
     document.querySelector("#username").classList.remove("readyText");
@@ -35,61 +43,7 @@ document.querySelector("#itchLink a").addEventListener("click", () => { ipcRende
 
 // Adding a new image to the list
 document.querySelector("#newImage").addEventListener("click", () => { document.querySelector("#loadImage").click(); });
-document.querySelector("#loadImage").addEventListener("change", loadImage);
-
-async function loadImage()
-{
-    var throws = await getData("throws");
-    var files = document.querySelector("#loadImage").files;
-    for (var i = 0; i < files.length; i++)
-    {
-        // Grab the image that was just loaded
-        var imageFile = files[i];
-        // If the folder for objects doesn't exist for some reason, make it
-        if (!fs.existsSync(getUserDataPath() + "/throws/"))
-            fs.mkdirSync(getUserDataPath() + "/throws/");
-
-        var source = fs.readFileSync(imageFile.path);
-    
-        // Ensure that we're not overwriting any existing files with the same name
-        // If the files have the same contents, allows the overwrite
-        // If the files have different contents, add an interating number to the end until it's a unique filename or has the same contents
-        var append = "";
-        if (imageFile.path != getUserDataPath() + "\\throws\\" + imageFile.name)
-        {
-            while (fs.existsSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."))))
-            {
-                var target = fs.readFileSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf(".")));
-
-                if (target.equals(source))
-                    append = append == "" ? 2 : (append + 1);
-                else
-                    break;
-            }
-        }
-        var filename = imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."));
-    
-        // Make a copy of the file into the local folder
-        fs.copyFileSync(imageFile.path, getUserDataPath() + "/throws/" + filename);
-        
-        // Add the new image, update the data, and refresh the images page
-        throws.unshift({
-            "enabled": true,
-            "location": "throws/" + filename,
-            "weight": 1.0,
-            "scale": 1.0,
-            "sound": null,
-            "volume": 1.0,
-            "customs": []
-        });
-    }
-    setData("throws", throws);
-    openImages();
-    copyFilesToDirectory();
-    
-    // Reset the image upload
-    document.querySelector("#loadImage").value = null;
-}
+document.querySelector("#loadImage").addEventListener("change", assetLoader.loadImage);
 
 document.querySelector("#imageTable").querySelector(".selectAll input").addEventListener("change", async () => {
     document.querySelector("#imageTable").querySelectorAll(".imageEnabled").forEach((element) => { 
@@ -100,84 +54,6 @@ document.querySelector("#imageTable").querySelector(".selectAll input").addEvent
         throws[i].enabled = document.querySelector("#imageTable").querySelector(".selectAll input").checked;
     setData("throws", throws);
 });
-
-async function openImages()
-{
-    var throws = await getData("throws");
-
-    document.querySelector("#imageTable").querySelectorAll(".imageRow").forEach((element) => { element.remove(); });
-    
-    var allEnabled = true;
-    for (var i = 0; i < throws.length; i++)
-    {
-        if (!throws[i].enabled)
-        {
-            allEnabled = false;
-            break;
-        }
-    }
-    document.querySelector("#imageTable").querySelector(".selectAll input").checked = allEnabled;
-
-    if (throws == null)
-        setData("throws", []);
-    else
-    {
-        throws.forEach((_, index) =>
-        {
-            if (fs.existsSync(getUserDataPath() + "/" + throws[index].location))
-            {
-                var row = document.querySelector("#imageRow").cloneNode(true);
-                row.removeAttribute("id");
-                row.classList.add("imageRow");
-                row.removeAttribute("hidden");
-                document.querySelector("#imageTable").appendChild(row);
-
-                row.querySelector(".imageLabel").innerText = throws[index].location.substr(throws[index].location.lastIndexOf('/') + 1);
-    
-                row.querySelector(".imageImage").src = getUserDataPath() + "/" + throws[index].location;
-
-                var pixel = throws[index].pixel != null ? throws[index].pixel : false;
-                row.querySelector(".imageImage").style.imageRendering = (pixel ? "pixelated" : "auto");
-
-                row.querySelector(".imageEnabled").checked = throws[index].enabled;
-                row.querySelector(".imageEnabled").addEventListener("change", async () => {
-                    var throws = await getData("throws");
-                    throws[index].enabled = row.querySelector(".imageEnabled").checked;
-                    setData("throws", throws);
-
-                    var allEnabled = true;
-                    for (var i = 0; i < throws.length; i++)
-                    {
-                        if (!throws[i].enabled)
-                        {
-                            allEnabled = false;
-                            break;
-                        }
-                    }
-                    document.querySelector("#imageTable").querySelector(".selectAll input").checked = allEnabled;
-                });
-
-                row.querySelector(".imageDetails").addEventListener("click", () => {
-                    currentImageIndex = index;
-                    openImageDetails();
-                    showPanel("imageDetails", true);
-                });
-
-                row.querySelector(".imageRemove").addEventListener("click", async () => {
-                    var throws = await getData("throws");
-                    throws.splice(index, 1);
-                    setData("throws", throws);
-                    openImages();
-                });
-            }
-            else
-            {
-                throws.splice(index, 1);
-                setData("throws", throws);
-            }
-        });
-    }
-}
 
 async function loadImageCustom(customName)
 {
@@ -2088,8 +1964,8 @@ window.onload = async function()
     loadData("ipThrower");
     loadData("ipVTubeStudio");
     loadData("minimizeToTray");
-    
-    openImages();
+
+    assetLoader.openImages();
     openBitImages();
     copyFilesToDirectory();
 
@@ -2340,7 +2216,7 @@ function showPanel(panel, stack)
                 if (panel == "bonkImages")
                 {
                     document.querySelector("#imagesButton").querySelector(".overlayButton").classList.add("buttonSelected");
-                    openImages();
+                    assetLoader.openImages();
                 }
                 else if (panel == "bonkSounds")
                 {
