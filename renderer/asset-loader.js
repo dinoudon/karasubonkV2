@@ -14,6 +14,10 @@ const folders = [ "throws", "impacts", "decals", "windups" ];
 // Dependencies injected from renderer
 let uiController, animationController;
 
+/**
+ * @description Initializes the asset loader with dependency injection
+ * @param {Object} deps - Dependencies object containing uiController and animationController
+ */
 function initialize(deps)
 {
     if (deps) {
@@ -22,6 +26,10 @@ function initialize(deps)
     }
 }
 
+/**
+ * @description Loads image files from file input and adds them to the throws collection
+ * @returns {Promise<void>}
+ */
 async function loadImage()
 {
     var throws = await getData("throws");
@@ -76,6 +84,10 @@ async function loadImage()
     document.querySelector("#loadImage").value = null;
 }
 
+/**
+ * @description Displays the image library UI with all loaded throw images
+ * @returns {Promise<void>}
+ */
 async function openImages()
 {
     var throws = await getData("throws");
@@ -157,6 +169,10 @@ async function openImages()
     }
 }
 
+/**
+ * @description Loads sound files from file input and adds them to the impacts collection
+ * @returns {Promise<void>}
+ */
 async function loadSound()
 {
     var impacts = await getData("impacts");
@@ -190,6 +206,10 @@ async function loadSound()
     document.querySelector("#loadSound").value = null;
 }
 
+/**
+ * @description Displays the sound library UI with all loaded impact sounds
+ * @returns {Promise<void>}
+ */
 async function openSounds()
 {
     var impacts = await getData("impacts");
@@ -254,6 +274,11 @@ async function openSounds()
     }
 }
 
+/**
+ * @description Loads impact decal images for a custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function loadImpactDecal(customName)
 {
     var customBonks = await getData("customBonks");
@@ -300,6 +325,11 @@ async function loadImpactDecal(customName)
     document.querySelector("#loadImpactDecal").value = null;
 }
 
+/**
+ * @description Displays the impact decals UI for a custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function openImpactDecals(customName)
 {
     // Refresh table to remove old event listeners
@@ -400,6 +430,11 @@ async function openImpactDecals(customName)
     });
 }
 
+/**
+ * @description Loads windup sound files for a custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function loadWindupSound(customName)
 {
     var customBonks = await getData("customBonks");
@@ -445,6 +480,11 @@ async function loadWindupSound(customName)
     document.querySelector("#loadWindupSound").value = null;
 }
 
+/**
+ * @description Displays the windup sounds UI for a custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function openWindupSounds(customName)
 {
     // Refresh table to remove old event listeners
@@ -534,6 +574,9 @@ async function openWindupSounds(customName)
     });
 }
 
+/**
+ * @description Copies all asset files from user data directory to application directory
+ */
 function copyFilesToDirectory()
 {
     folders.forEach((folder) => {

@@ -40,11 +40,19 @@ const statusDesc = [
     "<p>Awaiting authentication response from browser...</p>"
 ];
 
+/**
+ * @description Initializes the status manager and sets up IPC listeners for status updates
+ */
 function initialize()
 {
     ipcRenderer.on("status", (event, message) => { setStatus(event, message); });
 }
 
+/**
+ * @description Sets the current application status and updates the UI accordingly
+ * @param {*} _ - Unused event parameter
+ * @param {number} message - The new status code
+ */
 async function setStatus(_, message)
 {
     // Fix: reduce ui refresh related to status.
@@ -96,6 +104,10 @@ async function setStatus(_, message)
         document.querySelector("#calibrateButtons").classList.add("hidden");
 }
 
+/**
+ * @description Gets the current application status code
+ * @returns {number} The current status code
+ */
 function getStatus()
 {
     return status;
@@ -105,6 +117,12 @@ module.exports = {
     initialize,
     setStatus,
     getStatus,
+    /**
+     * @description Array of status title strings for different application states
+     */
     statusTitle,
+    /**
+     * @description Array of status description strings for different application states
+     */
     statusDesc
 };

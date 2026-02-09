@@ -11,6 +11,10 @@ let getData, setData, animationController, uiController, assetLoader;
 // Variables for redeem data management
 let gettingRedeemData = false, redeemData, cancelledGetRedeemData = false;
 
+/**
+ * @description Initializes the event manager with dependencies and sets up IPC listeners
+ * @param {Object} dependencies - Dependencies object containing getData, setData, and controller references
+ */
 function initialize(dependencies = {})
 {
     setupAuthenticationEvents();
@@ -25,6 +29,9 @@ function initialize(dependencies = {})
     if (dependencies.assetLoader) assetLoader = dependencies.assetLoader;
 }
 
+/**
+ * @description Sets up IPC listeners for authentication events
+ */
 function setupAuthenticationEvents()
 {
     ipcRenderer.on("username", (event, message) => {
@@ -32,11 +39,17 @@ function setupAuthenticationEvents()
     });
 }
 
+/**
+ * @description Sets up IPC listeners for link events
+ */
 function setupLinkEvents()
 {
     // Link event handling will be implemented here
 }
 
+/**
+ * @description Sets up IPC listener for redeem data responses
+ */
 function setupRedeemDataListener()
 {
     ipcRenderer.on("redeemData", (event, message) => {
@@ -45,7 +58,10 @@ function setupRedeemDataListener()
     });
 }
 
-// Create a new redeem event
+/**
+ * @description Creates a new redeem event and adds it to the redeems collection
+ * @returns {Promise<void>}
+ */
 async function newRedeem()
 {
     var redeems = await getData("redeems");
@@ -62,7 +78,10 @@ async function newRedeem()
     openEvents();
 }
 
-// Create a new command event
+/**
+ * @description Creates a new command event and adds it to the commands collection
+ * @returns {Promise<void>}
+ */
 async function newCommand()
 {
     var commands = await getData("commands");
@@ -80,6 +99,10 @@ async function newCommand()
     openEvents();
 }
 
+/**
+ * @description Initiates listening for a channel point redeem and waits for the data
+ * @returns {Promise<Array>} The redeem data [id, name]
+ */
 async function getRedeemData()
 {
     gettingRedeemData = true;
@@ -92,6 +115,9 @@ async function getRedeemData()
     return redeemData;
 }
 
+/**
+ * @description Cancels the current redeem data listening process
+ */
 function cancelGetRedeemData()
 {
     cancelledGetRedeemData = true;
@@ -99,11 +125,19 @@ function cancelGetRedeemData()
     ipcRenderer.send("listenRedeemCancel");
 }
 
+/**
+ * @description Checks if the redeem data listening was cancelled
+ * @returns {boolean} True if cancelled, false otherwise
+ */
 function wasCancelled()
 {
     return cancelledGetRedeemData;
 }
 
+/**
+ * @description Creates a new custom bonk configuration with default settings
+ * @returns {Promise<void>}
+ */
 async function addBonk()
 {
     var newBonkNumber = 1;
@@ -151,6 +185,11 @@ async function addBonk()
     openBonks();
 }
 
+/**
+ * @description Opens the bonk details panel for editing a custom bonk configuration
+ * @param {string} customBonkName - The name of the custom bonk to edit
+ * @returns {Promise<void>}
+ */
 async function bonkDetails(customBonkName)
 {
     var customBonks = await getData("customBonks");
@@ -377,6 +416,10 @@ async function bonkDetails(customBonkName)
     }
 }
 
+/**
+ * @description Displays the custom bonks library UI with all configured bonks
+ * @returns {Promise<void>}
+ */
 async function openBonks()
 {
     var customBonks = await getData("customBonks");
@@ -456,6 +499,10 @@ async function openBonks()
     }
 }
 
+/**
+ * @description Populates the test bonks panel with all custom bonk options
+ * @returns {Promise<void>}
+ */
 async function openTestBonks()
 {
     var customBonks = await getData("customBonks");
@@ -481,11 +528,19 @@ async function openTestBonks()
     }
 }
 
+/**
+ * @description Sends a test request for a custom bonk to the main process
+ * @param {string} customName - The name of the custom bonk to test
+ */
 function testCustomBonk(customName)
 {
     ipcRenderer.send("testCustomBonk", customName);
 }
 
+/**
+ * @description Displays the events panel with all redeems and commands
+ * @returns {Promise<void>}
+ */
 async function openEvents()
 {
     const customBonks = await getData("customBonks");

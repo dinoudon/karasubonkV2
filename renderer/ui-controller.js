@@ -9,6 +9,10 @@ const fs = require("fs");
 let dataManager, assetLoader, eventManager, animationController;
 let currentImageIndex = -1;
 
+/**
+ * @description Initializes the UI controller with dependencies and sets up event listeners
+ * @param {Object} dependencies - Dependencies object containing dataManager, assetLoader, eventManager, and animationController
+ */
 function initialize(dependencies = {})
 {
     if (dependencies.dataManager) dataManager = dependencies.dataManager;
@@ -19,13 +23,23 @@ function initialize(dependencies = {})
     setupUIEventListeners();
 }
 
-// Helper functions
+/**
+ * @description Ensures two input nodes have different values by incrementing if they match
+ * @param {HTMLElement} node - The first input node
+ * @param {HTMLElement} otherNode - The second input node to compare against
+ */
 function differentValue(node, otherNode)
 {
     if (node.value == otherNode.value)
         node.value++;
 }
 
+/**
+ * @description Clamps an input node's value between min and max bounds
+ * @param {HTMLElement} node - The input node to clamp
+ * @param {number|null} min - Minimum value (null for no minimum)
+ * @param {number|null} max - Maximum value (null for no maximum)
+ */
 function clampValue(node, min, max)
 {
     var val = node.value;
@@ -36,7 +50,11 @@ function clampValue(node, min, max)
     node.value = val;
 }
 
-// Custom library functions
+/**
+ * @description Loads custom images for a specific custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function loadImageCustom(customName)
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -84,6 +102,11 @@ async function loadImageCustom(customName)
     document.querySelector("#loadImageCustom").value = null;
 }
 
+/**
+ * @description Displays the custom images library for a specific custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function openImagesCustom(customName)
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -173,6 +196,11 @@ async function openImagesCustom(customName)
     }
 }
 
+/**
+ * @description Loads custom impact sounds for a specific custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function loadSoundCustom(customName)
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -217,6 +245,11 @@ async function loadSoundCustom(customName)
     document.querySelector("#loadSoundCustom").value = null;
 }
 
+/**
+ * @description Displays the custom sounds library for a specific custom bonk type
+ * @param {string} customName - The name of the custom bonk type
+ * @returns {Promise<void>}
+ */
 async function openSoundsCustom(customName)
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -302,6 +335,11 @@ async function openSoundsCustom(customName)
     }
 }
 
+/**
+ * @description Loads a bit image for a specific bit tier
+ * @param {string} key - The bit tier key (one, oneHundred, etc.)
+ * @returns {Promise<void>}
+ */
 async function loadBitImage(key)
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -327,6 +365,10 @@ async function loadBitImage(key)
     document.querySelector("#loadBitImage" + key).value = null;
 }
 
+/**
+ * @description Displays the bit images library with all bit tier images
+ * @returns {Promise<void>}
+ */
 async function openBitImages()
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -355,6 +397,10 @@ async function openBitImages()
     document.querySelector("#bit10000").querySelector(".bitImageScale").value = bitThrows.tenThousand.scale;
 }
 
+/**
+ * @description Loads a custom sound for the currently selected image
+ * @returns {Promise<void>}
+ */
 async function loadImageSound()
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -379,6 +425,10 @@ async function loadImageSound()
     assetLoader.copyFilesToDirectory();
 }
 
+/**
+ * @description Opens the image details panel for editing the currently selected image
+ * @returns {Promise<void>}
+ */
 async function openImageDetails()
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -457,6 +507,10 @@ async function openImageDetails()
     });
 }
 
+/**
+ * @description Displays the bit sounds library showing which sounds are enabled for bits
+ * @returns {Promise<void>}
+ */
 async function openBitSounds()
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -506,6 +560,11 @@ async function openBitSounds()
     }
 }
 
+/**
+ * @description Sends a test request for a specific throw item to the main process
+ * @param {number} index - The index of the throw item to test
+ * @returns {Promise<void>}
+ */
 async function testItem(index)
 {
     const { getData } = dataManager;
@@ -513,16 +572,27 @@ async function testItem(index)
     ipcRenderer.send("testItem", throws[index]);
 }
 
+/**
+ * @description Sets the current image index for editing
+ * @param {number} index - The index of the image to edit
+ */
 function setCurrentImageIndex(index)
 {
     currentImageIndex = index;
 }
 
+/**
+ * @description Gets the current image index
+ * @returns {number} The current image index
+ */
 function getCurrentImageIndex()
 {
     return currentImageIndex;
 }
 
+/**
+ * @description Sets up all UI event listeners for buttons, inputs, and navigation
+ */
 function setupUIEventListeners()
 {
     const { getData, setData } = dataManager;
@@ -744,6 +814,10 @@ function setupUIEventListeners()
     document.querySelector("#cancelCalibrate").addEventListener("click", () => { ipcRenderer.send("cancelCalibrate"); animationController.back(); });
 }
 
+/**
+ * @description Loads bit-specific impact sounds
+ * @returns {Promise<void>}
+ */
 async function loadBitSound()
 {
     const { getData, setData, getUserDataPath } = dataManager;
@@ -779,27 +853,48 @@ async function loadBitSound()
     document.querySelector("#loadBitSound").value = null;
 }
 
+/**
+ * @description Updates the status display in the UI
+ * @param {number} status - The status code
+ * @param {string} title - The status title
+ * @param {string} description - The status description
+ */
 function updateStatusDisplay(status, title, description)
 {
     // Status display update logic will be implemented here
 }
 
+/**
+ * @description Updates the username display in the UI
+ * @param {string} username - The username to display
+ */
 function updateUsernameDisplay(username)
 {
     // Username display update logic will be implemented here
 }
 
+/**
+ * @description Shows calibration buttons based on status
+ * @param {number} status - The current status code
+ */
 function showCalibrationButtons(status)
 {
     // Calibration button visibility logic will be implemented here
 }
 
+/**
+ * @description Hides calibration buttons
+ */
 function hideCalibrationButtons()
 {
     // Calibration button hiding logic will be implemented here
 }
 
-// Load the requested data and apply it to the relevant settings field
+/**
+ * @description Loads a specific data field and applies it to the corresponding UI element
+ * @param {string} field - The data field to load
+ * @returns {Promise<void>}
+ */
 async function loadData(field)
 {
     const { getData, setData } = dataManager;
@@ -831,7 +926,10 @@ async function loadData(field)
     }
 }
 
-// Load all settings from data
+/**
+ * @description Loads all settings from persistent storage and applies them to UI
+ * @returns {Promise<void>}
+ */
 async function loadAllSettings()
 {
     await loadData("followEnabled");

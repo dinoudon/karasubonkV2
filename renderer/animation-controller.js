@@ -12,6 +12,10 @@ let currentPanel, playing = false;
 let panelStack = [];
 let currentPanelLarge, playingLarge = false, openPanelLarge = false, cancelCalibrate = false;
 
+/**
+ * @description Initializes the animation controller with dependencies and sets the initial panel
+ * @param {Object} dependencies - Dependencies object containing assetLoader, eventManager, and statusManager
+ */
 function initialize(dependencies = {})
 {
     if (dependencies.assetLoader) assetLoader = dependencies.assetLoader;
@@ -22,6 +26,10 @@ function initialize(dependencies = {})
     currentPanel = document.querySelector("#bonkImages");
 }
 
+/**
+ * @description Removes all animation classes from a panel element
+ * @param {HTMLElement} panel - The panel element to clean
+ */
 function removeAll(panel)
 {
     panel.classList.remove("leftIn");
@@ -35,6 +43,9 @@ function removeAll(panel)
     panel.classList.remove("downOut");
 }
 
+/**
+ * @description Navigates back to the previous panel or closes the large panel
+ */
 function back()
 {
     if (!playingLarge && openPanelLarge)
@@ -80,6 +91,11 @@ function back()
         showPanel(panelStack.pop(), false);
 }
 
+/**
+ * @description Shows a panel with animation and manages panel navigation history
+ * @param {string} panel - The ID of the panel to show
+ * @param {boolean} stack - Whether to add the current panel to the navigation stack
+ */
 function showPanel(panel, stack)
 {
     if (!playing)
@@ -158,6 +174,10 @@ function showPanel(panel, stack)
     }
 }
 
+/**
+ * @description Shows a large overlay panel with animation
+ * @param {string} panel - The ID of the large panel to show
+ */
 function showPanelLarge(panel)
 {
     if (!playingLarge)
@@ -223,6 +243,13 @@ function showPanelLarge(panel)
     }
 }
 
+/**
+ * @description Switches between tabs by showing/hiding panels and updating selection states
+ * @param {string} show - The ID of the panel to show
+ * @param {Array<string>} hide - Array of panel IDs to hide
+ * @param {string} select - The ID of the tab to select
+ * @param {Array<string>} deselect - Array of tab IDs to deselect
+ */
 function showTab(show, hide, select, deselect)
 {
     if (show == "soundTable")
@@ -244,11 +271,19 @@ function showTab(show, hide, select, deselect)
 // Helper function reference - this will be passed from renderer.js
 let openBitSounds;
 
+/**
+ * @description Sets the openBitSounds function reference from renderer.js
+ * @param {Function} fn - The openBitSounds function to store
+ */
 function setOpenBitSounds(fn)
 {
     openBitSounds = fn;
 }
 
+/**
+ * @description Gets the current calibration cancellation state
+ * @returns {boolean} True if calibration was cancelled, false otherwise
+ */
 function getCancelCalibrate()
 {
     return cancelCalibrate;

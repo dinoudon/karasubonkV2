@@ -14,6 +14,9 @@ const defaultData = JSON.parse(fs.readFileSync(__dirname + "/../defaultData.json
 var isWriting = 0;
 var userDataPath = null;
 
+/**
+ * @description Initializes the data manager and sets up IPC listeners for user data path
+ */
 function initialize()
 {
     ipcRenderer.on("userDataPath", (event, message) => {
@@ -27,7 +30,11 @@ function initialize()
     });
 }
 
-// Get requested data, waiting for any current writes to finish first
+/**
+ * @description Retrieves requested data field from persistent storage, waiting for any current writes to finish first
+ * @param {string} field - The data field to retrieve
+ * @returns {Promise<any>} The value of the requested field
+ */
 async function getData(field)
 {
     while (isWriting > 0)
@@ -52,7 +59,11 @@ async function getData(field)
     return field;
 }
 
-// Send new data to the main process to write to file
+/**
+ * @description Sends new data to the main process to write to persistent storage
+ * @param {string} field - The data field to update
+ * @param {any} value - The new value to set
+ */
 function setData(field, value)
 {
     isWriting++;
@@ -68,4 +79,10 @@ async function setPorts()
     fs.writeFileSync(__dirname + "/../ports.js", "const ports = [ " + await getData("portThrower") + ", " + await getData("portVTubeStudio") + " ]; const ips = [ \"" + await getData("ipThrower") + "\", \"" + await getData("ipVTubeStudio") + "\" ];");
 }
 
-module.exports = { initialize, getData, setData, getUserDataPath: () => userDataPath };
+/**
+ * @description Gets the user data path
+ * @returns {string|null} The user data path or null if not initialized
+ */
+const getUserDataPath = () => userDataPath;
+
+module.exports = { initialize, getData, setData, getUserDataPath };
