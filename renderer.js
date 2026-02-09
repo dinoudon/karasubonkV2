@@ -4,6 +4,7 @@ const dataManager = require("./renderer/data-manager");
 const statusManager = require("./renderer/status-manager");
 const assetLoader = require("./renderer/asset-loader");
 const eventManager = require("./renderer/event-manager");
+const animationController = require("./renderer/animation-controller");
 
 const version = 1.26;
 
@@ -25,7 +26,7 @@ statusManager.initialize();
 assetLoader.initialize({
     setCurrentImageIndex: (index) => { currentImageIndex = index; },
     openImageDetails: () => { openImageDetails(); },
-    showPanel: (panel, stack) => { showPanel(panel, stack); },
+    showPanel: (panel, stack) => { animationController.showPanel(panel, stack); },
     clampValue: (node, min, max) => { clampValue(node, min, max); }
 });
 
@@ -33,10 +34,17 @@ assetLoader.initialize({
 eventManager.initialize({
     getData: getData,
     setData: setData,
-    showPanel: (panel, stack) => { showPanel(panel, stack); },
+    showPanel: (panel, stack) => { animationController.showPanel(panel, stack); },
     openImagesCustom: (customName) => { openImagesCustom(customName); },
     openSoundsCustom: (customName) => { openSoundsCustom(customName); },
     assetLoader: assetLoader
+});
+
+// Initialize animation controller
+animationController.initialize({
+    assetLoader: assetLoader,
+    eventManager: eventManager,
+    statusManager: statusManager
 });
 
 document.querySelector("#logout").addEventListener("click", () => {
@@ -974,6 +982,9 @@ window.onload = async function()
     openBitImages();
     assetLoader.copyFilesToDirectory();
 
+    // Pass openBitSounds function to animation controller
+    animationController.setOpenBitSounds(openBitSounds);
+
     checkVersion();
     document.title += " " + version;
     setData("version", version);
@@ -1075,252 +1086,28 @@ function clampValue(node, min, max)
 // -----------------
 // Window Animations
 // -----------------
-
-var currentPanel = document.querySelector("#bonkImages"), playing = false;
+// Now handled by animation-controller module
 
 // Window Event Listeners
-document.querySelector("#header").addEventListener("click", () => { showPanelLarge("statusWindow"); });
+document.querySelector("#header").addEventListener("click", () => { animationController.showPanelLarge("statusWindow"); });
 
 document.querySelector("#helpButton").addEventListener("click", () => { ipcRenderer.send("help"); });
-document.querySelector("#calibrateButton").addEventListener("click", () => { showPanelLarge("statusWindow", true); });
-document.querySelector("#settingsButton").addEventListener("click", () => { showPanelLarge("settings"); });
-document.querySelector("#testBonksButton").addEventListener("click", () => { showPanelLarge("testBonks"); });
+document.querySelector("#calibrateButton").addEventListener("click", () => { animationController.showPanelLarge("statusWindow", true); });
+document.querySelector("#settingsButton").addEventListener("click", () => { animationController.showPanelLarge("settings"); });
+document.querySelector("#testBonksButton").addEventListener("click", () => { animationController.showPanelLarge("testBonks"); });
 
-document.querySelector("#imagesButton").addEventListener("click", () => { showPanel("bonkImages"); });
-document.querySelector("#soundsButton").addEventListener("click", () => { showPanel("bonkSounds"); });
-document.querySelector("#customButton").addEventListener("click", () => { showPanel("customBonks"); });
-document.querySelector("#eventsButton").addEventListener("click", () => { showPanel("events"); });
+document.querySelector("#imagesButton").addEventListener("click", () => { animationController.showPanel("bonkImages"); });
+document.querySelector("#soundsButton").addEventListener("click", () => { animationController.showPanel("bonkSounds"); });
+document.querySelector("#customButton").addEventListener("click", () => { animationController.showPanel("customBonks"); });
+document.querySelector("#eventsButton").addEventListener("click", () => { animationController.showPanel("events"); });
 
-document.querySelector("#imagesDefaultTab").addEventListener("click", () => { showTab("imageTable", [ "bitImageTable" ], "imagesDefaultTab", [ "imagesBitsTab" ]); });
-document.querySelector("#imagesBitsTab").addEventListener("click", () => { showTab("bitImageTable", [ "imageTable" ], "imagesBitsTab", [ "imagesDefaultTab" ]); });
+document.querySelector("#imagesDefaultTab").addEventListener("click", () => { animationController.showTab("imageTable", [ "bitImageTable" ], "imagesDefaultTab", [ "imagesBitsTab" ]); });
+document.querySelector("#imagesBitsTab").addEventListener("click", () => { animationController.showTab("bitImageTable", [ "imageTable" ], "imagesBitsTab", [ "imagesDefaultTab" ]); });
 
-document.querySelector("#soundsDefaultTab").addEventListener("click", () => { showTab("soundTable", [ "bitSoundTable" ], "soundsDefaultTab", [ "soundsBitsTab" ]); });
-document.querySelector("#soundsBitsTab").addEventListener("click", () => { showTab("bitSoundTable", [ "soundTable" ], "soundsBitsTab", [ "soundsDefaultTab" ]); });
+document.querySelector("#soundsDefaultTab").addEventListener("click", () => { animationController.showTab("soundTable", [ "bitSoundTable" ], "soundsDefaultTab", [ "soundsBitsTab" ]); });
+document.querySelector("#soundsBitsTab").addEventListener("click", () => { animationController.showTab("bitSoundTable", [ "soundTable" ], "soundsBitsTab", [ "soundsDefaultTab" ]); });
 
-document.querySelectorAll(".windowBack").forEach((element) => { element.addEventListener("click", () => { back(); }) });
-
-function showTab(show, hide, select, deselect)
-{
-    if (show == "soundTable")
-        assetLoader.openSounds();
-    else if (show == "bitSoundTable")
-        openBitSounds();
-
-    for (var i = 0; i < hide.length; i++)
-        document.querySelector("#" + hide[i]).classList.add("hidden");
-
-    document.querySelector("#" + show).classList.remove("hidden");
-
-    for (var i = 0; i < deselect.length; i++)
-        document.querySelector("#" + deselect[i]).classList.remove("selectedTab");
-
-    document.querySelector("#" + select).classList.add("selectedTab");
-}
-
-function removeAll(panel)
-{
-    panel.classList.remove("leftIn");
-    panel.classList.remove("rightIn");
-    panel.classList.remove("upIn");
-    panel.classList.remove("downIn");
-
-    panel.classList.remove("leftOut");
-    panel.classList.remove("rightOut");
-    panel.classList.remove("upOut");
-    panel.classList.remove("downOut");
-}
-
-var panelStack = [];
-
-function back()
-{
-    if (!playingLarge && openPanelLarge)
-    {
-        openPanelLarge = false;
-
-        var anim = Math.floor(Math.random() * 4);
-        switch (anim)
-        {
-            case 0:
-                anim = "left";
-                break;
-            case 1:
-                anim = "right";
-                break;
-            case 2:
-                anim = "up";
-                break;
-            case 3:
-                anim = "down";
-                break;
-        }
-
-        removeAll(document.querySelector("#wideWindow"));
-        document.querySelector("#wideWindow").classList.add(anim + "Out");
-
-        if (currentPanelLarge.id == "statusWindow" && (status == 3 || status == 4 || status == 7))
-        {
-            cancelCalibrate = true;
-            ipcRenderer.send("cancelCalibrate");
-        }
-
-        playingLarge = true;
-        setTimeout(() => {
-            currentPanelLarge.classList.add("hidden");
-            currentPanelLarge = null;
-            playingLarge = false;
-            cancelCalibrate = false;
-            document.querySelector("#wideWindow").classList.add("hidden");
-        }, 500);
-    }
-    else if (panelStack.length > 0)
-        showPanel(panelStack.pop(), false);
-}
-
-function showPanel(panel, stack)
-{
-    if (!playing)
-    {
-        if (document.querySelector("#" + panel) != currentPanel)
-        {
-            playing = true;
-
-            var anim = Math.floor(Math.random() * 4);
-            switch (anim)
-            {
-                case 0:
-                    anim = "left";
-                    break;
-                case 1:
-                    anim = "right";
-                    break;
-                case 2:
-                    anim = "up";
-                    break;
-                case 3:
-                    anim = "down";
-                    break;
-            }
-
-            var oldPanel = currentPanel;
-            removeAll(oldPanel);
-            oldPanel.classList.add(anim + "Out");
-            
-            setTimeout(() => {
-                oldPanel.classList.add("hidden");
-            }, 500);
-
-            if (stack == null)
-                panelStack = [];
-
-            if (stack == null || !stack)
-            {
-
-                document.querySelector("#sideBar").querySelectorAll(".overlayButton").forEach((element) => { element.classList.remove("buttonSelected"); });
-    
-                if (panel == "bonkImages")
-                {
-                    document.querySelector("#imagesButton").querySelector(".overlayButton").classList.add("buttonSelected");
-                    assetLoader.openImages();
-                }
-                else if (panel == "bonkSounds")
-                {
-                    document.querySelector("#soundsButton").querySelector(".overlayButton").classList.add("buttonSelected");
-                    assetLoader.openSounds();
-                    openBitSounds();
-                }
-                else if (panel == "customBonks")
-                {
-                    document.querySelector("#customButton").querySelector(".overlayButton").classList.add("buttonSelected");
-                    eventManager.openBonks();
-                }
-                else if (panel == "events")
-                {
-                    document.querySelector("#eventsButton").querySelector(".overlayButton").classList.add("buttonSelected");
-                    eventManager.openEvents();
-                }
-            }
-            else if (stack)
-                panelStack.push(oldPanel.id);
-
-            currentPanel = document.querySelector("#" + panel);
-            currentPanel.classList.remove("hidden");
-            removeAll(currentPanel);
-            currentPanel.classList.add(anim + "In");
-
-            setTimeout(() => {
-                playing = false;
-            }, 500);
-        }
-    }
-}
-
-var currentPanelLarge, playingLarge = false, openPanelLarge = false, cancelCalibrate = false;
-
-function showPanelLarge(panel)
-{
-    if (!playingLarge)
-    {
-        if (document.querySelector("#" + panel) != currentPanelLarge)
-        {
-            var anim = Math.floor(Math.random() * 4);
-            switch (anim)
-            {
-                case 0:
-                    anim = "left";
-                    break;
-                case 1:
-                    anim = "right";
-                    break;
-                case 2:
-                    anim = "up";
-                    break;
-                case 3:
-                    anim = "down";
-                    break;
-            }
-
-            if (panel == "testBonks")
-                eventManager.openTestBonks();
-
-            var oldPanel = currentPanelLarge;
-            currentPanelLarge = document.querySelector("#" + panel);
-            removeAll(currentPanelLarge);
-            currentPanelLarge.classList.remove("hidden");
-
-            if (!openPanelLarge)
-            {
-                openPanelLarge = true;
-                removeAll(document.querySelector("#wideWindow"));
-                document.querySelector("#wideWindow").classList.remove("hidden");
-                document.querySelector("#wideWindow").classList.add(anim + "In");
-            }
-            else
-            {
-                if (oldPanel != null)
-                {
-                    if (oldPanel.id == "statusWindow" && (status == 3 || status == 4 || status == 7))
-                        ipcRenderer.send("cancelCalibrate");
-
-                    removeAll(oldPanel);
-                    oldPanel.classList.add(anim + "Out");
-                    setTimeout(() => {
-                        oldPanel.classList.add("hidden");
-                    }, 500);
-                }
-    
-                currentPanelLarge.classList.add(anim + "In");
-            }
-
-            playingLarge = true;
-            setTimeout(() => {
-                playingLarge = false;
-            }, 500);
-        }
-        else
-            back();
-    }
-}
+document.querySelectorAll(".windowBack").forEach((element) => { element.addEventListener("click", () => { animationController.back(); }) });
 
 // In response to raid event from main process.
 // Do the HTTP request here, since it"s already a browser of sorts, and send the response back.
@@ -1372,9 +1159,9 @@ document.querySelector("#testFollow").addEventListener("click", () => { ipcRende
 document.querySelector("#testEmote").addEventListener("click", () => { ipcRenderer.send("emote"); });
 document.querySelector("#testRaid").addEventListener("click", () => { ipcRenderer.send("raid"); });
 
-document.querySelector("#calibrateButton").addEventListener("click", () => { if (!cancelCalibrate) ipcRenderer.send("startCalibrate"); });
+document.querySelector("#calibrateButton").addEventListener("click", () => { if (!animationController.getCancelCalibrate()) ipcRenderer.send("startCalibrate"); });
 document.querySelector("#nextCalibrate").addEventListener("click", () => { ipcRenderer.send("nextCalibrate"); });
-document.querySelector("#cancelCalibrate").addEventListener("click", () => { ipcRenderer.send("cancelCalibrate"); back(); });
+document.querySelector("#cancelCalibrate").addEventListener("click", () => { ipcRenderer.send("cancelCalibrate"); animationController.back(); });
 
 // Test a specific item
 async function testItem(index)
