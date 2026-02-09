@@ -104,7 +104,7 @@ async function loadImageCustom(customName)
     }
     setData("throws", throws);
     openImagesCustom(customName);
-    copyFilesToDirectory();
+    assetLoader.copyFilesToDirectory();
     
     // Reset the image upload
     document.querySelector("#loadImageCustom").value = null;
@@ -240,7 +240,7 @@ async function loadSoundCustom(customName)
     }
     setData("impacts", impacts);
     openSoundsCustom(customName);
-    copyFilesToDirectory();
+    assetLoader.copyFilesToDirectory();
     
     document.querySelector("#loadSoundCustom").value = null;
 }
@@ -395,7 +395,7 @@ async function loadBitImage(key)
     bitThrows[key].location = "throws/" + filename;
     setData("bitThrows", bitThrows);
     openBitImages();
-    copyFilesToDirectory();
+    assetLoader.copyFilesToDirectory();
     
     // Reset the image upload
     document.querySelector("#loadBitImage" + key).value = null;
@@ -456,7 +456,7 @@ async function loadImageSound()
     // Reset the image upload
     document.querySelector("#loadImageSound").value = null;
     openImageDetails(currentImageIndex);
-    copyFilesToDirectory();
+    assetLoader.copyFilesToDirectory();
 }
 
 var currentImageIndex = -1;
@@ -582,7 +582,7 @@ async function loadBitSound()
     }
     setData("impacts", impacts);
     openBitSounds();
-    copyFilesToDirectory();
+    assetLoader.copyFilesToDirectory();
 
     document.querySelector("#loadBitSound").value = null;
 }
@@ -1308,19 +1308,6 @@ async function loadData(field)
     }
 }
 
-const folders = [ "throws", "impacts", "decals", "windups" ];
-function copyFilesToDirectory()
-{
-    folders.forEach((folder) => {
-        if (!fs.existsSync(__dirname + "/" + folder))
-            fs.mkdirSync(__dirname + "/" + folder);
-
-        fs.readdirSync(getUserDataPath() + "/" + folder).forEach(file => {
-            fs.copyFileSync(getUserDataPath() + "/" + folder + "/" + file, __dirname + "/" + folder + "/" + file);
-        });
-    })
-}
-
 // Place all settings from data into the proper location on load
 window.onload = async function()
 {
@@ -1595,7 +1582,7 @@ window.onload = async function()
 
     assetLoader.openImages();
     openBitImages();
-    copyFilesToDirectory();
+    assetLoader.copyFilesToDirectory();
 
     checkVersion();
     document.title += " " + version;

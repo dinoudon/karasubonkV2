@@ -9,6 +9,8 @@ const dataManager = require("./data-manager");
 
 const { getData, setData, getUserDataPath } = dataManager;
 
+const folders = [ "throws", "impacts", "decals", "windups" ];
+
 // Dependencies injected from renderer
 var dependencies = {};
 
@@ -531,7 +533,14 @@ async function openWindupSounds(customName)
 
 function copyFilesToDirectory()
 {
-    ipcRenderer.send("copyFilesToDirectory");
+    folders.forEach((folder) => {
+        if (!fs.existsSync(__dirname + "/" + folder))
+            fs.mkdirSync(__dirname + "/" + folder);
+
+        fs.readdirSync(getUserDataPath() + "/" + folder).forEach(file => {
+            fs.copyFileSync(getUserDataPath() + "/" + folder + "/" + file, __dirname + "/" + folder + "/" + file);
+        });
+    })
 }
 
 module.exports = {
