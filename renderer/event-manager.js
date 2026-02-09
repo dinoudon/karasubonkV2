@@ -6,7 +6,7 @@ const { ipcRenderer } = require("electron");
 // Manages IPC event listeners and communication with main process
 // Also handles custom bonk management
 
-let getData, setData, showPanel, openImagesCustom, openSoundsCustom, assetLoader;
+let getData, setData, animationController, uiController, assetLoader;
 
 // Variables for redeem data management
 let gettingRedeemData = false, redeemData, cancelledGetRedeemData = false;
@@ -20,9 +20,8 @@ function initialize(dependencies = {})
     // Store dependencies for bonk management functions
     if (dependencies.getData) getData = dependencies.getData;
     if (dependencies.setData) setData = dependencies.setData;
-    if (dependencies.showPanel) showPanel = dependencies.showPanel;
-    if (dependencies.openImagesCustom) openImagesCustom = dependencies.openImagesCustom;
-    if (dependencies.openSoundsCustom) openSoundsCustom = dependencies.openSoundsCustom;
+    if (dependencies.animationController) animationController = dependencies.animationController;
+    if (dependencies.uiController) uiController = dependencies.uiController;
     if (dependencies.assetLoader) assetLoader = dependencies.assetLoader;
 }
 
@@ -158,7 +157,7 @@ async function bonkDetails(customBonkName)
 
     if (customBonks[customBonkName] != null)
     {
-        showPanel("bonkDetails", true);
+        animationController.showPanel("bonkDetails", true);
 
         // Copy new elements to remove all old listeners
         var oldTable = document.querySelector("#bonkDetailsTable");
@@ -333,8 +332,8 @@ async function bonkDetails(customBonkName)
         bonkDetailsTable.querySelector(".images").addEventListener("click", () => {
             if (!bonkDetailsTable.querySelector(".images").disabled)
             {
-                openImagesCustom(customBonkName);
-                showPanel("bonkImagesCustom", true);
+                uiController.openImagesCustom(customBonkName);
+                animationController.showPanel("bonkImagesCustom", true);
             }
         });
 
@@ -351,21 +350,21 @@ async function bonkDetails(customBonkName)
         bonkDetailsTable.querySelector(".sounds").addEventListener("click", () => {
             if (!bonkDetailsTable.querySelector(".sounds").disabled)
             {
-                openSoundsCustom(customBonkName);
-                showPanel("bonkSoundsCustom", true);
+                uiController.openSoundsCustom(customBonkName);
+                animationController.showPanel("bonkSoundsCustom", true);
             }
         });
 
         // Impact Decals
         bonkDetailsTable.querySelector(".impactDecals").addEventListener("click", () => {
             assetLoader.openImpactDecals(customBonkName);
-            showPanel("impactDecals", true);
+            animationController.showPanel("impactDecals", true);
         });
 
         // Windup Sounds
         bonkDetailsTable.querySelector(".windupSounds").addEventListener("click", () => {
             assetLoader.openWindupSounds(customBonkName);
-            showPanel("windupSounds", true);
+            animationController.showPanel("windupSounds", true);
         });
 
         // Windup Delay

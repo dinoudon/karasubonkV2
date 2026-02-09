@@ -12,11 +12,14 @@ const { getData, setData, getUserDataPath } = dataManager;
 const folders = [ "throws", "impacts", "decals", "windups" ];
 
 // Dependencies injected from renderer
-var dependencies = {};
+let uiController, animationController;
 
 function initialize(deps)
 {
-    dependencies = deps || {};
+    if (deps) {
+        uiController = deps.uiController;
+        animationController = deps.animationController;
+    }
 }
 
 async function loadImage()
@@ -130,12 +133,12 @@ async function openImages()
                 });
 
                 row.querySelector(".imageDetails").addEventListener("click", () => {
-                    if (dependencies.setCurrentImageIndex)
-                        dependencies.setCurrentImageIndex(index);
-                    if (dependencies.openImageDetails)
-                        dependencies.openImageDetails();
-                    if (dependencies.showPanel)
-                        dependencies.showPanel("imageDetails", true);
+                    if (uiController)
+                        uiController.setCurrentImageIndex(index);
+                    if (uiController)
+                        uiController.openImageDetails();
+                    if (animationController)
+                        animationController.showPanel("imageDetails", true);
                 });
 
                 row.querySelector(".imageRemove").addEventListener("click", async () => {
@@ -236,8 +239,8 @@ async function openSounds()
                 row.querySelector(".soundVolume").value = impacts[index].volume;
                 row.querySelector(".soundVolume").addEventListener("change", async () => {
                     var impacts = await getData("impacts");
-                    if (dependencies.clampValue)
-                        dependencies.clampValue(row.querySelector(".soundVolume"), 0, 1);
+                    if (uiController)
+                        uiController.clampValue(row.querySelector(".soundVolume"), 0, 1);
                     impacts[index].volume = parseFloat(row.querySelector(".soundVolume").value);
                     setData("impacts", impacts);
                 });
@@ -374,8 +377,8 @@ async function openImpactDecals(customName)
             row.querySelector(".decalDuration").value = customBonks[customName].impactDecals[index].duration;
             row.querySelector(".decalDuration").addEventListener("change", async () => {
                 var customBonks = await getData("customBonks");
-                if (dependencies.clampValue)
-                    dependencies.clampValue(row.querySelector(".decalDuration"), 0, null);
+                if (uiController)
+                    uiController.clampValue(row.querySelector(".decalDuration"), 0, null);
                 customBonks[customName].impactDecals[index].duration = parseFloat(row.querySelector(".decalDuration").value);
                 setData("customBonks", customBonks);
             });
@@ -383,8 +386,8 @@ async function openImpactDecals(customName)
             row.querySelector(".decalScale").value = customBonks[customName].impactDecals[index].scale;
             row.querySelector(".decalScale").addEventListener("change", async () => {
                 var customBonks = await getData("customBonks");
-                if (dependencies.clampValue)
-                    dependencies.clampValue(row.querySelector(".decalScale"), 0, null);
+                if (uiController)
+                    uiController.clampValue(row.querySelector(".decalScale"), 0, null);
                 customBonks[customName].impactDecals[index].scale = parseFloat(row.querySelector(".decalScale").value);
                 setData("customBonks", customBonks);
             });

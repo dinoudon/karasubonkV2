@@ -1,4 +1,5 @@
 const { ipcRenderer } = require("electron");
+const fs = require("fs");
 
 // ==============
 // UI Controller
@@ -6,8 +7,7 @@ const { ipcRenderer } = require("electron");
 // Handles UI updates and DOM manipulation
 
 let dataManager, assetLoader, eventManager, animationController;
-let clampValue, loadImageCustom, loadSoundCustom, loadBitImage, loadImageSound, openImageDetails, currentImageIndex;
-let openBitImages, openBitSounds, testItem, differentValue;
+let currentImageIndex = -1;
 
 function initialize(dependencies = {})
 {
@@ -15,19 +15,512 @@ function initialize(dependencies = {})
     if (dependencies.assetLoader) assetLoader = dependencies.assetLoader;
     if (dependencies.eventManager) eventManager = dependencies.eventManager;
     if (dependencies.animationController) animationController = dependencies.animationController;
-    if (dependencies.clampValue) clampValue = dependencies.clampValue;
-    if (dependencies.loadImageCustom) loadImageCustom = dependencies.loadImageCustom;
-    if (dependencies.loadSoundCustom) loadSoundCustom = dependencies.loadSoundCustom;
-    if (dependencies.loadBitImage) loadBitImage = dependencies.loadBitImage;
-    if (dependencies.loadImageSound) loadImageSound = dependencies.loadImageSound;
-    if (dependencies.openImageDetails) openImageDetails = dependencies.openImageDetails;
-    if (dependencies.currentImageIndex !== undefined) currentImageIndex = dependencies.currentImageIndex;
-    if (dependencies.openBitImages) openBitImages = dependencies.openBitImages;
-    if (dependencies.openBitSounds) openBitSounds = dependencies.openBitSounds;
-    if (dependencies.testItem) testItem = dependencies.testItem;
-    if (dependencies.differentValue) differentValue = dependencies.differentValue;
 
     setupUIEventListeners();
+}
+
+// Helper functions
+function differentValue(node, otherNode)
+{
+    if (node.value == otherNode.value)
+        node.value++;
+}
+
+function clampValue(node, min, max)
+{
+    var val = node.value;
+    if (min != null && val < min)
+        val = min;
+    if (max != null && val > max)
+        val = max;
+    node.value = val;
+}
+
+// Custom library functions
+async function loadImageCustom(customName)
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var throws = await getData("throws");
+    var files = document.querySelector("#loadImageCustom").files;
+    for (var i = 0; i < files.length; i++)
+    {
+        var imageFile = files[i];
+        if (!fs.existsSync(getUserDataPath() + "/throws/"))
+            fs.mkdirSync(getUserDataPath() + "/throws/");
+
+        var source = fs.readFileSync(imageFile.path);
+
+        var append = "";
+        if (imageFile.path != getUserDataPath() + "\\throws\\" + imageFile.name)
+        {
+            while (fs.existsSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."))))
+            {
+                var target = fs.readFileSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf(".")));
+
+                if (target.equals(source))
+                    append = append == "" ? 2 : (append + 1);
+                else
+                    break;
+            }
+        }
+        var filename = imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."));
+
+        fs.copyFileSync(imageFile.path, getUserDataPath() + "/throws/" + filename);
+
+        throws.unshift({
+            "enabled": false,
+            "location": "throws/" + filename,
+            "weight": 1.0,
+            "scale": 1.0,
+            "sound": null,
+            "volume": 1.0,
+            "customs": [ customName ]
+        });
+    }
+    setData("throws", throws);
+    openImagesCustom(customName);
+    assetLoader.copyFilesToDirectory();
+
+    document.querySelector("#loadImageCustom").value = null;
+}
+
+async function openImagesCustom(customName)
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var oldTable = document.querySelector("#imageTableCustom");
+    var newTable = oldTable.cloneNode(true);
+    oldTable.after(newTable);
+    oldTable.remove();
+
+    document.querySelector("#newImageCustom").addEventListener("click", () => { document.querySelector("#loadImageCustom").click(); });
+    document.querySelector("#loadImageCustom").addEventListener("change", () => { loadImageCustom(customName); });
+
+    var throws = await getData("throws");
+
+    var allEnabled = true;
+    for (var i = 0; i < throws.length; i++)
+    {
+        if (!throws[i].customs.includes(customName))
+        {
+            allEnabled = false;
+            break;
+        }
+    }
+    document.querySelector("#imageTableCustom").querySelector(".selectAll input").checked = allEnabled;
+
+    document.querySelector("#imageTableCustom").querySelector(".selectAll input").addEventListener("change", async () => {
+        var throws = await getData("throws");
+        document.querySelector("#imageTableCustom").querySelectorAll(".imageEnabled").forEach((element) => {
+            element.checked = document.querySelector("#imageTableCustom").querySelector(".selectAll input").checked;
+        });
+        for (var i = 0; i < throws.length; i++)
+        {
+            if (document.querySelector("#imageTableCustom").querySelector(".selectAll input").checked && !throws[i].customs.includes(customName))
+                throws[i].customs.push(customName);
+            else if (!document.querySelector("#imageTableCustom").querySelector(".selectAll input").checked && throws[i].customs.includes(customName))
+                throws[i].customs.splice(throws[i].customs.indexOf(customName), 1);
+        }
+        setData("throws", throws);
+    });
+
+    document.querySelector("#imageTableCustom").querySelectorAll(".imageRow").forEach((element) => { element.remove(); });
+
+    if (throws == null)
+        setData("throws", []);
+    else
+    {
+        throws.forEach((_, index) =>
+        {
+            if (fs.existsSync(getUserDataPath() + "/" + throws[index].location))
+            {
+                var row = document.querySelector("#imageRowCustom").cloneNode(true);
+                row.removeAttribute("id");
+                row.classList.add("imageRow");
+                row.removeAttribute("hidden");
+                document.querySelector("#imageTableCustom").appendChild(row);
+
+                row.querySelector(".imageLabel").innerText = throws[index].location.substr(throws[index].location.lastIndexOf('/') + 1);
+
+                row.querySelector(".imageImage").src = getUserDataPath() + "/" + throws[index].location;
+
+                row.querySelector(".imageEnabled").checked = throws[index].customs.includes(customName);
+                row.querySelector(".imageEnabled").addEventListener("change", async () => {
+                    var throws = await getData("throws");
+                    if (!row.querySelector(".imageEnabled").checked && throws[index].customs.includes(customName))
+                        throws[index].customs.splice(throws[index].customs.indexOf(customName), 1);
+                    else if (row.querySelector(".imageEnabled").checked && !throws[index].customs.includes(customName))
+                        throws[index].customs.push(customName);
+                    setData("throws", throws);
+
+                    var allEnabled = true;
+                    for (var i = 0; i < throws.length; i++)
+                    {
+                        if (!throws[i].customs.includes(customName))
+                        {
+                            allEnabled = false;
+                            break;
+                        }
+                    }
+                    document.querySelector("#imageTableCustom").querySelector(".selectAll input").checked = allEnabled;
+                });
+            }
+            else
+            {
+                throws.splice(index, 1);
+                setData("throws", throws);
+            }
+        });
+    }
+}
+
+async function loadSoundCustom(customName)
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var impacts = await getData("impacts");
+    var files = document.querySelector("#loadSoundCustom").files;
+    for (var i = 0; i < files.length; i++)
+    {
+        var soundFile = files[i];
+        if (!fs.existsSync(getUserDataPath() + "/impacts/"))
+            fs.mkdirSync(getUserDataPath() + "/impacts/");
+
+        var source = fs.readFileSync(soundFile.path);
+
+        var append = "";
+        if (soundFile.path != getUserDataPath() + "\\impacts\\" + soundFile.name)
+        {
+            while (fs.existsSync(getUserDataPath() + "/impacts/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."))))
+            {
+                var target = fs.readFileSync(getUserDataPath() + "/impacts/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf(".")));
+
+                if (target.equals(source))
+                    append = append == "" ? 2 : (append + 1);
+                else
+                    break;
+            }
+        }
+        var filename = soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."));
+
+        fs.copyFileSync(soundFile.path, getUserDataPath() + "/impacts/" + filename);
+
+        impacts.unshift({
+            "location": "impacts/" + filename,
+            "volume": 1.0,
+            "enabled": false,
+            "customs": [ customName ]
+        });
+    }
+    setData("impacts", impacts);
+    openSoundsCustom(customName);
+    assetLoader.copyFilesToDirectory();
+
+    document.querySelector("#loadSoundCustom").value = null;
+}
+
+async function openSoundsCustom(customName)
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var oldTable = document.querySelector("#soundTableCustom");
+    var newTable = oldTable.cloneNode(true);
+    oldTable.after(newTable);
+    oldTable.remove();
+
+    document.querySelector("#newSoundCustom").addEventListener("click", () => { document.querySelector("#loadSoundCustom").click(); });
+    document.querySelector("#loadSoundCustom").addEventListener("change", () => { loadSoundCustom(customName); });
+
+    var impacts = await getData("impacts");
+
+    var allEnabled = true;
+    for (var i = 0; i < impacts.length; i++)
+    {
+        if (!impacts[i].customs.includes(customName))
+        {
+            allEnabled = false;
+            break;
+        }
+    }
+    document.querySelector("#soundTableCustom").querySelector(".selectAll input").checked = allEnabled;
+
+    document.querySelector("#soundTableCustom").querySelector(".selectAll input").addEventListener("change", async () => {
+        var impacts = await getData("impacts");
+        document.querySelector("#soundTableCustom").querySelectorAll(".imageEnabled").forEach((element) => {
+            element.checked = document.querySelector("#soundTableCustom").querySelector(".selectAll input").checked;
+        });
+        for (var i = 0; i < impacts.length; i++)
+        {
+            if (document.querySelector("#soundTableCustom").querySelector(".selectAll input").checked && !impacts[i].customs.includes(customName))
+                impacts[i].customs.push(customName);
+            else if (!document.querySelector("#soundTableCustom").querySelector(".selectAll input").checked && impacts[i].customs.includes(customName))
+                impacts[i].customs.splice(impacts[i].customs.indexOf(customName), 1);
+        }
+        setData("impacts", impacts);
+    });
+
+    document.querySelector("#soundTableCustom").querySelectorAll(".soundRow").forEach((element) => { element.remove(); });
+
+    if (impacts == null)
+        setData("impacts", []);
+    else
+    {
+        impacts.forEach((_, index) =>
+        {
+            if (fs.existsSync(getUserDataPath() + "/" + impacts[index].location))
+            {
+                var row = document.querySelector("#soundRowCustom").cloneNode(true);
+                row.removeAttribute("id");
+                row.classList.add("soundRow");
+                row.removeAttribute("hidden");
+                row.querySelector(".imageLabel").innerText = impacts[index].location.substr(impacts[index].location.lastIndexOf('/') + 1);
+                document.querySelector("#soundTableCustom").appendChild(row);
+
+                row.querySelector(".imageEnabled").checked = impacts[index].customs.includes(customName);
+                row.querySelector(".imageEnabled").addEventListener("change", async () => {
+                    var impacts = await getData("impacts");
+                    if (!row.querySelector(".imageEnabled").checked && impacts[index].customs.includes(customName))
+                        impacts[index].customs.splice(impacts[index].customs.indexOf(customName), 1);
+                    else if (row.querySelector(".imageEnabled").checked && !impacts[index].customs.includes(customName))
+                        impacts[index].customs.push(customName);
+                    setData("impacts", impacts);
+
+                    for (var i = 0; i < impacts.length; i++)
+                    {
+                        if (!impacts[i].customs.includes(customName))
+                        {
+                            allEnabled = false;
+                            break;
+                        }
+                    }
+                    document.querySelector("#soundTableCustom").querySelector(".selectAll input").checked = allEnabled;
+                });
+            }
+            else
+            {
+                impacts.splice(index, 1);
+                setData("impacts", impacts);
+            }
+        });
+    }
+}
+
+async function loadBitImage(key)
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var bitThrows = await getData("bitThrows");
+    var files = document.querySelector("#loadBitImage" + key).files;
+    var imageFile = files[0];
+    if (!fs.existsSync(getUserDataPath() + "/throws/"))
+        fs.mkdirSync(getUserDataPath() + "/throws/");
+
+    var append = "";
+    if (imageFile.path != getUserDataPath() + "\\throws\\" + imageFile.name)
+        while (fs.existsSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."))))
+            append = append == "" ? 2 : (append + 1);
+    var filename = imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."));
+
+    fs.copyFileSync(imageFile.path, getUserDataPath() + "/throws/" + filename);
+
+    bitThrows[key].location = "throws/" + filename;
+    setData("bitThrows", bitThrows);
+    openBitImages();
+    assetLoader.copyFilesToDirectory();
+
+    document.querySelector("#loadBitImage" + key).value = null;
+}
+
+async function openBitImages()
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var bitThrows = await getData("bitThrows");
+
+    if (bitThrows == null)
+    {
+        const defaultData = require("./data-manager").defaultData;
+        bitThrows = defaultData.bitThrows;
+        setData("bitThrows", bitThrows);
+    }
+
+    document.querySelector("#bit1").querySelector(".imageImage").src = getUserDataPath() + "/" + bitThrows.one.location;
+    document.querySelector("#bit1").querySelector(".bitImageScale").value = bitThrows.one.scale;
+
+    document.querySelector("#bit100").querySelector(".imageImage").src = getUserDataPath() + "/" + bitThrows.oneHundred.location;
+    document.querySelector("#bit100").querySelector(".bitImageScale").value = bitThrows.oneHundred.scale;
+
+    document.querySelector("#bit1000").querySelector(".imageImage").src = getUserDataPath() + "/" + bitThrows.oneThousand.location;
+    document.querySelector("#bit1000").querySelector(".bitImageScale").value = bitThrows.oneThousand.scale;
+
+    document.querySelector("#bit5000").querySelector(".imageImage").src = getUserDataPath() + "/" + bitThrows.fiveThousand.location;
+    document.querySelector("#bit5000").querySelector(".bitImageScale").value = bitThrows.fiveThousand.scale;
+
+    document.querySelector("#bit10000").querySelector(".imageImage").src = getUserDataPath() + "/" + bitThrows.tenThousand.location;
+    document.querySelector("#bit10000").querySelector(".bitImageScale").value = bitThrows.tenThousand.scale;
+}
+
+async function loadImageSound()
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var soundFile = document.querySelector("#loadImageSound").files[0];
+    if (!fs.existsSync(getUserDataPath() + "/impacts/"))
+        fs.mkdirSync(getUserDataPath() + "/impacts/");
+
+    var append = "";
+    if (soundFile.path != getUserDataPath() + "\\impacts\\" + soundFile.name)
+        while (fs.existsSync( getUserDataPath() + "/impacts/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."))))
+            append = append == "" ? 2 : (append + 1);
+    var filename = soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."));
+
+    fs.copyFileSync(soundFile.path, getUserDataPath() + "/impacts/" + filename);
+
+    var throws = await getData("throws");
+    throws[currentImageIndex].sound = "impacts/" + filename;
+    setData("throws", throws);
+
+    document.querySelector("#loadImageSound").value = null;
+    openImageDetails(currentImageIndex);
+    assetLoader.copyFilesToDirectory();
+}
+
+async function openImageDetails()
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var throws = await getData("throws");
+
+    var oldButton = document.querySelector("#testImage");
+    var newButton = document.querySelector("#testImage").cloneNode(true);
+    oldButton.after(newButton);
+    oldButton.remove();
+
+    var oldTable = document.querySelector("#testImage");
+    var newTable = oldTable.cloneNode(true);
+    oldTable.after(newTable);
+    oldTable.remove();
+
+    document.querySelector("#testImage").addEventListener("click", () => testItem(currentImageIndex));
+
+    const details = document.querySelector("#imageDetails");
+
+    details.querySelector(".imageLabel").innerText = throws[currentImageIndex].location.substr(throws[currentImageIndex].location.lastIndexOf('/') + 1);
+
+    details.querySelector(".imageImage").src = getUserDataPath() + "/" + throws[currentImageIndex].location;
+    details.querySelector(".imageImage").style.transform = "scale(" + throws[currentImageIndex].scale + ")";
+    details.querySelector(".imageWeight").value = throws[currentImageIndex].weight;
+    details.querySelector(".imageScale").value = throws[currentImageIndex].scale;
+
+    if (throws[currentImageIndex].pixel == null)
+        throws[currentImageIndex].pixel = false;
+    details.querySelector(".imagePixel").checked = throws[currentImageIndex].pixel;
+    details.querySelector(".imageImage").style.imageRendering = (throws[currentImageIndex].pixel ? "pixelated" : "auto");
+
+    if (throws[currentImageIndex].sound != null)
+    {
+        details.querySelector(".imageSoundName").value = throws[currentImageIndex].sound.substr(8);
+        details.querySelector(".imageSoundRemove").removeAttribute("disabled");
+    }
+    else
+    {
+        details.querySelector(".imageSoundName").value = null;
+        details.querySelector(".imageSoundRemove").disabled = "disabled";
+    }
+
+    details.querySelector(".imageWeight").addEventListener("change", async () => {
+        var throws = await getData("throws");
+        throws[currentImageIndex].weight = parseFloat(details.querySelector(".imageWeight").value);
+        setData("throws", throws);
+    });
+
+    details.querySelector(".imageScale").addEventListener("change", async () => {
+        var throws = await getData("throws");
+        throws[currentImageIndex].scale = parseFloat(details.querySelector(".imageScale").value);
+        details.querySelector(".imageImage").style.transform = "scale(" + throws[currentImageIndex].scale + ")";
+        setData("throws", throws);
+    });
+
+    details.querySelector(".imagePixel").addEventListener("change", async () => {
+        var throws = await getData("throws");
+        throws[currentImageIndex].pixel = details.querySelector(".imagePixel").checked;
+        details.querySelector(".imageImage").style.imageRendering = (throws[currentImageIndex].pixel ? "pixelated" : "auto");
+        setData("throws", throws);
+    });
+
+    details.querySelector(".imageSoundVolume").value = throws[currentImageIndex].volume;
+    details.querySelector(".imageSoundVolume").addEventListener("change", async () => {
+        var throws = await getData("throws");
+        throws[currentImageIndex].volume = parseFloat(details.querySelector(".imageSoundVolume").value);
+        setData("throws", throws);
+    });
+
+    details.querySelector(".imageSoundRemove").addEventListener("click", async () => {
+        var throws = await getData("throws");
+        throws[currentImageIndex].sound = null;
+        setData("throws", throws);
+        details.querySelector(".imageSoundName").value = null;
+        details.querySelector(".imageSoundRemove").disabled = "disabled";
+    });
+}
+
+async function openBitSounds()
+{
+    const { getData, setData, getUserDataPath } = dataManager;
+    var impacts = await getData("impacts");
+
+    document.querySelectorAll(".bitSoundRow").forEach((element) => { element.remove(); });
+
+    if (impacts == null)
+        setData("impacts", []);
+    else
+    {
+        impacts.forEach((_, index) =>
+        {
+            if (fs.existsSync(getUserDataPath() + "/" + impacts[index].location))
+            {
+                var row = document.querySelector("#bitSoundRow").cloneNode(true);
+                row.removeAttribute("id");
+                row.classList.add("bitSoundRow");
+                row.removeAttribute("hidden");
+                row.querySelector(".imageLabel").innerText = impacts[index].location.substr(impacts[index].location.lastIndexOf('/') + 1);
+                document.querySelector("#bitSoundTable").appendChild(row);
+
+                row.querySelector(".imageEnabled").checked = impacts[index].bits;
+                row.querySelector(".imageEnabled").addEventListener("change", async () => {
+                    var impacts = await getData("impacts");
+                    impacts[index].bits = row.querySelector(".imageEnabled").checked;
+                    setData("impacts", impacts);
+
+                    var allEnabled = true;
+                    for (var i = 0; i < impacts.length; i++)
+                    {
+                        if (!impacts[i].bits)
+                        {
+                            allEnabled = false;
+                            break;
+                        }
+                    }
+                    document.querySelector("#bitSoundTable").querySelector(".selectAll input").checked = allEnabled;
+                });
+            }
+            else
+            {
+                impacts.splice(index, 1);
+                setData("impacts", impacts);
+            }
+        });
+    }
+}
+
+async function testItem(index)
+{
+    const { getData } = dataManager;
+    const throws = await getData("throws");
+    ipcRenderer.send("testItem", throws[index]);
+}
+
+function setCurrentImageIndex(index)
+{
+    currentImageIndex = index;
+}
+
+function getCurrentImageIndex()
+{
+    return currentImageIndex;
 }
 
 function setupUIEventListeners()
@@ -404,5 +897,19 @@ module.exports = {
     showCalibrationButtons,
     hideCalibrationButtons,
     loadData,
-    loadAllSettings
+    loadAllSettings,
+    loadImageCustom,
+    openImagesCustom,
+    loadSoundCustom,
+    openSoundsCustom,
+    loadBitImage,
+    openBitImages,
+    loadImageSound,
+    openImageDetails,
+    openBitSounds,
+    testItem,
+    differentValue,
+    clampValue,
+    setCurrentImageIndex,
+    getCurrentImageIndex
 };
