@@ -154,7 +154,99 @@ async function openImages()
 
 async function loadSound()
 {
-    // Sound loading logic will be implemented here
+    var impacts = await getData("impacts");
+    var files = document.querySelector("#loadSound").files;
+    for (var i = 0; i < files.length; i++)
+    {
+        var soundFile = files[i];
+        if (!fs.existsSync(getUserDataPath() + "/impacts/"))
+            fs.mkdirSync(getUserDataPath() + "/impacts/");
+
+        var append = "";
+        if (soundFile.path != getUserDataPath() + "\\impacts\\" + soundFile.name)
+            while (fs.existsSync( getUserDataPath() + "/impacts/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."))))
+                append = append == "" ? 2 : (append + 1);
+        var filename = soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."));
+
+        fs.copyFileSync(soundFile.path, getUserDataPath() + "/impacts/" + filename);
+
+        impacts.unshift({
+            "location": "impacts/" + filename,
+            "volume": 1.0,
+            "enabled": true,
+            "bits": true,
+            "customs": []
+        });
+    }
+    setData("impacts", impacts);
+    openSounds();
+    copyFilesToDirectory();
+
+    document.querySelector("#loadSound").value = null;
+}
+
+async function openSounds()
+{
+    var impacts = await getData("impacts");
+
+    document.querySelector("#soundTable").querySelectorAll(".soundRow").forEach((element) => { element.remove(); });
+
+    if (impacts == null)
+        setData("impacts", []);
+    else
+    {
+        impacts.forEach((_, index) =>
+        {
+            if (fs.existsSync(getUserDataPath() + "/" + impacts[index].location))
+            {
+                var row = document.querySelector("#soundRow").cloneNode(true);
+                row.removeAttribute("id");
+                row.classList.add("soundRow");
+                row.removeAttribute("hidden");
+                row.querySelector(".imageLabel").innerText = impacts[index].location.substr(impacts[index].location.lastIndexOf('/') + 1);
+                document.querySelector("#soundTable").appendChild(row);
+
+                row.querySelector(".imageRemove").addEventListener("click", async () => {
+                    var impacts = await getData("impacts");
+                    impacts.splice(index, 1);
+                    setData("impacts", impacts);
+                    openSounds();
+                });
+
+                row.querySelector(".imageEnabled").checked = impacts[index].enabled;
+                row.querySelector(".imageEnabled").addEventListener("change", async () => {
+                    var impacts = await getData("impacts");
+                    impacts[index].enabled = row.querySelector(".imageEnabled").checked;
+                    setData("impacts", impacts);
+
+                    var allEnabled = true;
+                    for (var i = 0; i < impacts.length; i++)
+                    {
+                        if (!impacts[i].enabled)
+                        {
+                            allEnabled = false;
+                            break;
+                        }
+                    }
+                    document.querySelector("#soundTable").querySelector(".selectAll input").checked = allEnabled;
+                });
+
+                row.querySelector(".soundVolume").value = impacts[index].volume;
+                row.querySelector(".soundVolume").addEventListener("change", async () => {
+                    var impacts = await getData("impacts");
+                    if (dependencies.clampValue)
+                        dependencies.clampValue(row.querySelector(".soundVolume"), 0, 1);
+                    impacts[index].volume = parseFloat(row.querySelector(".soundVolume").value);
+                    setData("impacts", impacts);
+                });
+            }
+            else
+            {
+                impacts.splice(index, 1);
+                setData("impacts", impacts);
+            }
+        });
+    }
 }
 
 function copyFilesToDirectory()
@@ -167,5 +259,6 @@ module.exports = {
     loadImage,
     openImages,
     loadSound,
+    openSounds,
     copyFilesToDirectory
 };
