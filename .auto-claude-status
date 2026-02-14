@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "003-memory-leak-remediation",
+  "state": "planning",
+  "subtasks": {
+    "completed": 0,
+    "total": 0,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "Fix Event Listener Accumulation",
+    "id": null,
+    "total": 1
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 2,
+    "started_at": "2026-02-14T09:07:21.067435"
+  },
+  "last_update": "2026-02-14T09:10:42.231092"
+}

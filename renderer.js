@@ -191,6 +191,12 @@ document.querySelector("#imageTable").querySelector(".selectAll input").addEvent
 
 async function openImages()
 {
+    // Refresh table to remove old event listeners
+    var oldTable = document.querySelector("#imageTable");
+    var newTable = oldTable.cloneNode(true);
+    oldTable.after(newTable);
+    oldTable.remove();
+
     var throws = await getData("throws");
 
     document.querySelector("#imageTable").querySelectorAll(".imageRow").forEach((element) => { element.remove(); });

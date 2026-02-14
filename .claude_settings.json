@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation/**)",
+      "Write(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation/**)",
+      "Edit(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation/**)",
+      "Glob(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation/**)",
+      "Grep(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation/**)",
+      "Read(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation\\.auto-claude\\specs\\003-memory-leak-remediation/**)",
+      "Write(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation\\.auto-claude\\specs\\003-memory-leak-remediation/**)",
+      "Edit(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\003-memory-leak-remediation\\.auto-claude\\specs\\003-memory-leak-remediation/**)",
+      "Read(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Write(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Edit(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Glob(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Grep(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}
