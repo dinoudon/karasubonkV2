@@ -77,6 +77,7 @@ function connectKarasu()
                 karasuIsOpen = false;
                 console.log("Lost connection to Karasubot!");
                 endCalibration();
+                cleanupPhysicsObjects();
                 clearInterval(tryConnectKarasu);
                 tryConnectKarasu = setInterval(retryConnectKarasu, 1000 * 3);
             }
@@ -748,7 +749,24 @@ function bonk(image, weight, scale, sound, volume, data, faceWidthMin, faceWidth
                             var randV = Math.random();
                             var vX = randV * 3 * (fromLeft ? -1 : 1) * data.physicsHorizontal;
                             var vY = (1 - randV) * 10 * (angle < 0 ? -1 : 0.5) * data.physicsVertical;
-    
+
+                            // Enforce max objects limit to prevent unbounded growth
+                            if (objects.length >= MAX_PHYSICS_OBJECTS)
+                            {
+                                var oldObj = objects.shift();
+                                try
+                                {
+                                    if (oldObj.root && oldObj.root.parentNode)
+                                    {
+                                        oldObj.root.parentNode.removeChild(oldObj.root);
+                                    }
+                                }
+                                catch (e)
+                                {
+                                    // Element already removed or doesn't exist - safe to continue
+                                }
+                            }
+
                             objects.push({
                                 "x": x,
                                 "y": y,
@@ -782,6 +800,7 @@ function bonk(image, weight, scale, sound, volume, data, faceWidthMin, faceWidth
 var physicsSimulator = null;
 var physicsFPS = 60, physicsGravityMult = 1, physicsGravityReverse = false;
 var objects = [];
+var MAX_PHYSICS_OBJECTS = 100;
 
 function simulatePhysics()
 {
@@ -793,9 +812,46 @@ function simulatePhysics()
         objects[i].element.style.transform = "translate(" + objects[i].x + "vw," + objects[i].y + "vh)";
         if (objects[i].y > 100 || physicsGravityReverse && objects[i].y < -100)
         {
-            document.querySelector("body").removeChild(objects[i].root);
+            try
+            {
+                if (objects[i].root && objects[i].root.parentNode)
+                {
+                    objects[i].root.parentNode.removeChild(objects[i].root);
+                }
+            }
+            catch (e)
+            {
+                // Element already removed or doesn't exist - safe to continue
+            }
             objects.splice(i--, 1);
         }
+    }
+}
+
+function cleanupPhysicsObjects()
+{
+    // Clean up all remaining physics objects
+    while (objects.length > 0)
+    {
+        var obj = objects.pop();
+        try
+        {
+            if (obj.root && obj.root.parentNode)
+            {
+                obj.root.parentNode.removeChild(obj.root);
+            }
+        }
+        catch (e)
+        {
+            // Element already removed or doesn't exist - safe to continue
+        }
+    }
+
+    // Stop physics simulation
+    if (physicsSimulator)
+    {
+        clearInterval(physicsSimulator);
+        physicsSimulator = null;
     }
 }
 
