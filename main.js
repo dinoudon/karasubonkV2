@@ -174,6 +174,42 @@ async function login()
   }
 
   authenticating = false;
+
+  // Restart status interval
+  clearInterval(statusInterval);
+  statusInterval = setInterval(() => {
+    if (mainWindow != null)
+    {
+      var status = 0;
+      if (portInUse)
+        status = 9;
+      else if (!authenticated)
+        status = 1;
+      else if (!listenersActive)
+        status = 8;
+      else if (socket == null)
+        status = 2;
+      else if (calibrateStage == 0 || calibrateStage == 1)
+        status = 3;
+      else if (calibrateStage == 2 || calibrateStage == 3)
+        status = 4;
+      else if (!connectedVTube)
+        status = 5;
+      else if (listening)
+        status = 6;
+      else if (calibrateStage == -1)
+        status = 7;
+      else if (badVersion)
+        status = 10;
+      else if (noResponse)
+        status = 11;
+      else if (authenticating)
+        status = 12;
+
+      if (!exiting)
+        mainWindow.webContents.send("status", status);
+    }
+  }, 100);
 }
 
 // When the "Log out" or "Log in" button is clicked
@@ -270,11 +306,14 @@ function logOut()
   authenticating = false;
 
   listenersActive = false;
+
+  // Clear status interval
+  clearInterval(statusInterval);
 }
 
 // Periodically reporting status back to renderer
 var exiting = false;
-setInterval(() => {
+var statusInterval = setInterval(() => {
   if (mainWindow != null)
   {
     var status = 0;
@@ -302,7 +341,7 @@ setInterval(() => {
       status = 11;
     else if (authenticating)
       status = 12;
-  
+
     if (!exiting)
       mainWindow.webContents.send("status", status);
   }
