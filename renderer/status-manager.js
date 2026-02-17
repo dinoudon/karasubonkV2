@@ -46,6 +46,43 @@ const statusDesc = [
 function initialize()
 {
     ipcRenderer.on("status", (event, message) => { setStatus(event, message); });
+
+    // Connection state updates from main.js (WebSocket reliability)
+    ipcRenderer.on("connectionStates", (event, states) => {
+        updateConnectionIndicator("#kbonkStatus", states.karasubot);
+        updateConnectionIndicator("#vtubeStudioStatus", states.vtubeStudio);
+    });
+}
+
+function updateConnectionIndicator(selector, state)
+{
+    const element = document.querySelector(selector);
+    if (!element) return;
+
+    if (state === "connected")
+    {
+        element.innerText = "Connected";
+        element.classList.remove("errorText", "workingText");
+        element.classList.add("readyText");
+    }
+    else if (state === "connecting")
+    {
+        element.innerText = "Connecting...";
+        element.classList.remove("errorText", "readyText");
+        element.classList.add("workingText");
+    }
+    else if (state === "disconnected")
+    {
+        element.innerText = "Disconnected";
+        element.classList.remove("readyText", "workingText");
+        element.classList.add("errorText");
+    }
+    else
+    {
+        element.innerText = "Error";
+        element.classList.remove("readyText", "workingText");
+        element.classList.add("errorText");
+    }
 }
 
 /**

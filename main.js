@@ -343,7 +343,13 @@ var statusInterval = setInterval(() => {
       status = 12;
 
     if (!exiting)
+    {
       mainWindow.webContents.send("status", status);
+      mainWindow.webContents.send("connectionStates", {
+        karasubot: karasubotConnectionState,
+        vtubeStudio: vtubeStudioConnectionState
+      });
+    }
   }
 }, 100);
 
@@ -374,6 +380,10 @@ ipcMain.on("link", () => require('electron').shell.openExternal("https://typeou.
 const WebSocket = require("ws");
 
 var wss, portInUse = false, socket, connectedVTube = false, badVersion = false, noResponse = false;
+
+// Connection states for UI indicators
+var karasubotConnectionState = "disconnected";
+var vtubeStudioConnectionState = "disconnected";
 
 function checkVersion()
 {
@@ -426,6 +436,16 @@ function createServer()
         {
           noResponse = false;
           badVersion = parseFloat(request.version) != data.version;
+        }
+        if (request.type == "connectionState")
+        {
+          console.log(`[Connection State] ${request.service}: ${request.state}`);
+
+          // Update connection state variables
+          if (request.service == "karasubot")
+            karasubotConnectionState = request.state;
+          else if (request.service == "vtubeStudio")
+            vtubeStudioConnectionState = request.state;
         }
         if (request.type == "calibrating")
         {

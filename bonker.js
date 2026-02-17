@@ -2,6 +2,7 @@
 const version = 1.26;
 
 var socketKarasu, karasuIsOpen = false;
+var karasuReconnector;
 var isCalibrating = false;
 
 var previousModelPosition = {
@@ -34,7 +35,7 @@ function endCalibration()
                 }
             }
             socketVTube.onmessage = null;
-            socketVTube.send(JSON.stringify(request));
+            vTubeReconnector.sendOrQueue(socketVTube, request);
         }
     }
 }
@@ -56,6 +57,8 @@ function tryWarnVersion()
     document.querySelector("#warnVersion").hidden = !badVersion;
 }
 
+var karasuHealthCheckInterval;
+
 function connectKarasu()
 {
     var ip = ips[0];
@@ -68,20 +71,58 @@ function connectKarasu()
         karasuIsOpen = true;
         console.log("Connected to Karasubot!");
 
-        // Stop attempting to reconnect unless we lose connection
-        clearInterval(tryConnectKarasu);
-        tryConnectKarasu = setInterval(function()
+        // Reset reconnection delay on successful connection
+        karasuReconnector.resetDelay();
+        karasuReconnector.stopReconnecting();
+
+        // Flush any queued messages
+        karasuReconnector.flushQueue(socketKarasu);
+
+        // Send connection state update to main.js
+        karasuReconnector.sendOrQueue(socketKarasu, {
+            "type": "connectionState",
+            "service": "karasubot",
+            "state": "connected"
+        });
+
+        // Set up health check to detect connection loss
+        if (karasuHealthCheckInterval)
+            clearInterval(karasuHealthCheckInterval);
+
+        karasuHealthCheckInterval = karasuReconnector.scheduleConnectionCheck(function()
         {
             if (socketKarasu.readyState != 1)
             {
                 karasuIsOpen = false;
                 console.log("Lost connection to Karasubot!");
+
+                // Send disconnection state update to main.js
+                karasuReconnector.sendOrQueue(socketKarasu, {
+                    "type": "connectionState",
+                    "service": "karasubot",
+                    "state": "disconnected"
+                });
+
                 endCalibration();
                 cleanupPhysicsObjects();
-                clearInterval(tryConnectKarasu);
-                tryConnectKarasu = setInterval(retryConnectKarasu, 1000 * 3);
+                clearInterval(karasuHealthCheckInterval);
+                karasuReconnector.startReconnecting();
             }
         }, 1000 * 3);
+    };
+    socketKarasu.onerror = function(error)
+    {
+        karasuIsOpen = false;
+        karasuReconnector.startReconnecting();
+    };
+    socketKarasu.onclose = function()
+    {
+        karasuIsOpen = false;
+        if (karasuHealthCheckInterval)
+        {
+            clearInterval(karasuHealthCheckInterval);
+            karasuHealthCheckInterval = null;
+        }
     };
     // Process incoming requests
     socketKarasu.onmessage = function(event)
@@ -93,10 +134,10 @@ function connectKarasu()
             mainVersion = parseFloat(data.version);
             badVersion = mainVersion != version;
             tryWarnVersion();
-            socketKarasu.send(JSON.stringify({
+            karasuReconnector.sendOrQueue(socketKarasu, {
                 "type": "versionReport",
                 "version": version
-            }));
+            });
         }
         else if (data.type == "calibrating")
         {
@@ -135,7 +176,7 @@ function connectKarasu()
                             "size": modelPosition.size
                         }
                     }
-                    socketVTube.send(JSON.stringify(request));
+                    vTubeReconnector.sendOrQueue(socketVTube, request);
                     break;
                 // Stage 0 is calibrating at smallest size
                 case 0:
@@ -154,7 +195,7 @@ function connectKarasu()
                         }
                     }
                     socketVTube.onmessage = null;
-                    socketVTube.send(JSON.stringify(request));
+                    vTubeReconnector.sendOrQueue(socketVTube, request);
                     break;
                 // Stage 1 is sending min size position information back
                 case 1:
@@ -176,9 +217,9 @@ function connectKarasu()
                             "modelID": tempData.modelID
                         }
                         socketVTube.onmessage = null;
-                        socketKarasu.send(JSON.stringify(request));
+                        karasuReconnector.sendOrQueue(socketKarasu, request);
                     }
-                    socketVTube.send(JSON.stringify(request));
+                    vTubeReconnector.sendOrQueue(socketVTube, request);
                     break;
                 // Stage 2 is calibrating at largest size
                 case 2:
@@ -195,7 +236,7 @@ function connectKarasu()
                         }
                     }
                     socketVTube.onmessage = null;
-                    socketVTube.send(JSON.stringify(request));
+                    vTubeReconnector.sendOrQueue(socketVTube, request);
                     break;
                 // Stage 3 is sending max size position information back
                 case 3:
@@ -217,9 +258,9 @@ function connectKarasu()
                             "modelID": tempData.modelID
                         }
                         socketVTube.onmessage = null;
-                        socketKarasu.send(JSON.stringify(request));
+                        karasuReconnector.sendOrQueue(socketKarasu, request);
                     }
-                    socketVTube.send(JSON.stringify(request));
+                    vTubeReconnector.sendOrQueue(socketVTube, request);
                     break;
                 // Stage 4 is finishing calibration
                 case 4:
@@ -264,7 +305,7 @@ function connectKarasu()
                         tryAuthorization();
                     }
                 }
-                socketVTube.send(JSON.stringify(request));
+                vTubeReconnector.sendOrQueue(socketVTube, request);
             }
         }
         else if (!isCalibrating && vTubeIsOpen)
@@ -440,25 +481,27 @@ function connectKarasu()
                         break;
                 }
             }
-            socketVTube.send(JSON.stringify(request));
+            vTubeReconnector.sendOrQueue(socketVTube, request);
         }
     }
 }
 
-connectKarasu();
-// Retry connection to Karasubot every 5 seconds
-var tryConnectKarasu = setInterval(retryConnectKarasu, 1000 * 3);
-
-function retryConnectKarasu()
+// Initialize WebSocketReconnector for Karasubot with exponential backoff
+karasuReconnector = new WebSocketReconnector("Karasubot", function()
 {
     console.log("Retrying connection to Karasubot...");
     connectKarasu();
-}
+}, { delays: [1, 2, 4, 8, 16] });
+
+// Start initial connection attempt (onerror will trigger reconnection if it fails)
+connectKarasu();
 
 // VTube Studio API Scripts
 
 var socketVTube;
 var vTubeIsOpen = false;
+var vTubeReconnector;
+var vTubeHealthCheckInterval;
 
 function connectVTube()
 {
@@ -469,41 +512,79 @@ function connectVTube()
     socketVTube = new WebSocket("ws://" + ip + ":" + ports[1]);
     socketVTube.onopen = function()
     {
+        vTubeIsOpen = true;
         console.log("Connected to VTube Studio!");
 
-        clearInterval(tryConnectVTube);
-        tryConnectVTube = setInterval(function()
+        // Reset reconnection delay on successful connection
+        vTubeReconnector.resetDelay();
+        vTubeReconnector.stopReconnecting();
+
+        // Flush any queued messages
+        vTubeReconnector.flushQueue(socketVTube);
+
+        // Send connection state update to main.js
+        karasuReconnector.sendOrQueue(socketKarasu, {
+            "type": "connectionState",
+            "service": "vtubeStudio",
+            "state": "connected"
+        });
+
+        // Set up health check to detect connection loss
+        if (vTubeHealthCheckInterval)
+            clearInterval(vTubeHealthCheckInterval);
+
+        vTubeHealthCheckInterval = vTubeReconnector.scheduleConnectionCheck(function()
         {
             if (socketVTube.readyState != 1)
             {
                 vTubeIsOpen = false;
                 console.log("Lost connection to VTube Studio!");
+
+                // Send disconnection state update to main.js
+                karasuReconnector.sendOrQueue(socketKarasu, {
+                    "type": "connectionState",
+                    "service": "vtubeStudio",
+                    "state": "disconnected"
+                });
+
                 endCalibration();
-                clearInterval(tryConnectVTube);
-                tryConnectVTube = setInterval(retryConnectVTube, 1000 * 3);
+                clearInterval(vTubeHealthCheckInterval);
+                vTubeReconnector.startReconnecting();
             }
         }, 1000 * 3);
 
         setTimeout(tryAuthorization, 1 + Math.random() * 2);
     };
+    socketVTube.onerror = function(error)
+    {
+        vTubeIsOpen = false;
+        vTubeReconnector.startReconnecting();
+    };
+    socketVTube.onclose = function()
+    {
+        vTubeIsOpen = false;
+        if (vTubeHealthCheckInterval)
+        {
+            clearInterval(vTubeHealthCheckInterval);
+            vTubeHealthCheckInterval = null;
+        }
+    };
 }
 
-connectVTube();
-// Retry connection to VTube Studio every 3 seconds
-var tryConnectVTube = setInterval(retryConnectVTube, 1000 * 3);
-
-function retryConnectVTube()
+// Initialize WebSocketReconnector for VTube Studio with exponential backoff
+vTubeReconnector = new WebSocketReconnector("VTube Studio", function()
 {
     console.log("Retrying connection to VTube Studio...");
     connectVTube();
-}
+}, { delays: [1, 2, 4, 8, 16] });
+
+// Start initial connection attempt (onerror will trigger reconnection if it fails)
+connectVTube();
 
 var failedAuth = false;
 function tryAuthorization()
 {
-    if (!vTubeIsOpen && tryConnectVTube == null)
-        tryConnectVTube = setInterval(retryConnectVTube, 1000 * 3);
-    else if (karasuIsOpen)
+    if (karasuIsOpen)
     {
         if (failedAuth)
         {
@@ -531,19 +612,19 @@ function tryAuthorization()
                         "type": "setAuthVTS",
                         "token": response.data.authenticationToken
                     }
-                    socketKarasu.send(JSON.stringify(request));
+                    karasuReconnector.sendOrQueue(socketKarasu, request);
                 }
                 else if (response.messageType == "APIError" && response.data.errorID == 50)
                     console.log("Authentication Declined");
             }
-            socketVTube.send(JSON.stringify(request));
+            vTubeReconnector.sendOrQueue(socketVTube, request);
         }
         else
         {
             var request = {
                 "type": "getAuthVTS"
             }
-            socketKarasu.send(JSON.stringify(request));
+            karasuReconnector.sendOrQueue(socketKarasu, request);
         }
     }
     else
@@ -560,7 +641,7 @@ setInterval(() => {
             "type": "status",
             "connectedVTube": vTubeIsOpen
         }
-        socketKarasu.send(JSON.stringify(request));
+        karasuReconnector.sendOrQueue(socketKarasu, request);
     }
 }, 1000);
 
@@ -793,7 +874,7 @@ function bonk(image, weight, scale, sound, volume, data, faceWidthMin, faceWidth
                 }
             }
         }
-        socketVTube.send(JSON.stringify(request));
+        vTubeReconnector.sendOrQueue(socketVTube, request);
     }
 }
 
@@ -883,7 +964,7 @@ function flinch(multH, angle, mag, paramH, paramV, paramE, returnSpeed, eyeState
 
     socketVTube.onmessage = null;
     // Cause the initial flinch
-    socketVTube.send(JSON.stringify(request));
+    vTubeReconnector.sendOrQueue(socketVTube, request);
 
     flinchWeight = 1;
     // Gradually return to default
@@ -925,7 +1006,7 @@ function flinchReturn(multH, angle, mag, paramH, paramV, paramE, returnSpeed, ey
         }
     }
 
-    socketVTube.send(JSON.stringify(request));
+    vTubeReconnector.sendOrQueue(socketVTube, request);
 
     if (flinchWeight == 0 && flinchInterval)
         clearInterval(flinchInterval);
