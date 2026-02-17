@@ -1,5 +1,6 @@
 const { ipcRenderer } = require("electron");
 const fs = require("fs");
+const { loadFileWithConflictResolution } = require("./file-utils");
 
 // ==============
 // UI Controller
@@ -66,22 +67,7 @@ async function loadImageCustom(customName)
         if (!fs.existsSync(getUserDataPath() + "/throws/"))
             fs.mkdirSync(getUserDataPath() + "/throws/");
 
-        var source = fs.readFileSync(imageFile.path);
-
-        var append = "";
-        if (imageFile.path != getUserDataPath() + "\\throws\\" + imageFile.name)
-        {
-            while (fs.existsSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."))))
-            {
-                var target = fs.readFileSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf(".")));
-
-                if (target.equals(source))
-                    append = append == "" ? 2 : (append + 1);
-                else
-                    break;
-            }
-        }
-        var filename = imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."));
+        var filename = loadFileWithConflictResolution(imageFile.path, getUserDataPath() + "/throws", imageFile.name);
 
         fs.copyFileSync(imageFile.path, getUserDataPath() + "/throws/" + filename);
 
@@ -212,22 +198,7 @@ async function loadSoundCustom(customName)
         if (!fs.existsSync(getUserDataPath() + "/impacts/"))
             fs.mkdirSync(getUserDataPath() + "/impacts/");
 
-        var source = fs.readFileSync(soundFile.path);
-
-        var append = "";
-        if (soundFile.path != getUserDataPath() + "\\impacts\\" + soundFile.name)
-        {
-            while (fs.existsSync(getUserDataPath() + "/impacts/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."))))
-            {
-                var target = fs.readFileSync(getUserDataPath() + "/impacts/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf(".")));
-
-                if (target.equals(source))
-                    append = append == "" ? 2 : (append + 1);
-                else
-                    break;
-            }
-        }
-        var filename = soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."));
+        var filename = loadFileWithConflictResolution(soundFile.path, getUserDataPath() + "/impacts", soundFile.name);
 
         fs.copyFileSync(soundFile.path, getUserDataPath() + "/impacts/" + filename);
 

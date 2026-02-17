@@ -2,6 +2,7 @@ const { ipcRenderer } = require("electron");
 const fs = require("fs");
 const path = require('path');
 const dataManager = require("./data-manager");
+const { loadFileWithConflictResolution } = require("./file-utils");
 
 // ============
 // Asset Loader
@@ -43,25 +44,7 @@ async function loadImage()
         if (!fs.existsSync(getUserDataPath() + "/throws/"))
             fs.mkdirSync(getUserDataPath() + "/throws/");
 
-        var source = fs.readFileSync(imageFile.path);
-
-        // Ensure that we're not overwriting any existing files with the same name
-        // If the files have the same contents, allows the overwrite
-        // If the files have different contents, add an interating number to the end until it's a unique filename or has the same contents
-        var append = "";
-        if (imageFile.path != getUserDataPath() + "\\throws\\" + imageFile.name)
-        {
-            while (fs.existsSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."))))
-            {
-                var target = fs.readFileSync(getUserDataPath() + "/throws/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf(".")));
-
-                if (target.equals(source))
-                    append = append == "" ? 2 : (append + 1);
-                else
-                    break;
-            }
-        }
-        var filename = imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."));
+        var filename = loadFileWithConflictResolution(imageFile.path, getUserDataPath() + "/throws", imageFile.name);
 
         // Make a copy of the file into the local folder
         fs.copyFileSync(imageFile.path, getUserDataPath() + "/throws/" + filename);
@@ -290,25 +273,7 @@ async function loadImpactDecal(customName)
         if (!fs.existsSync(getUserDataPath() + "/decals/"))
             fs.mkdirSync(getUserDataPath() + "/decals/");
 
-        var source = fs.readFileSync(imageFile.path);
-
-        // Ensure that we're not overwriting any existing files with the same name
-        // If the files have the same contents, allows the overwrite
-        // If the files have different contents, add an interating number to the end until it's a unique filename or has the same contents
-        var append = "";
-        if (imageFile.path != getUserDataPath() + "\\decals\\" + imageFile.name)
-        {
-            while (fs.existsSync(getUserDataPath() + "/decals/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."))))
-            {
-                var target = fs.readFileSync(getUserDataPath() + "/decals/" + imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf(".")));
-
-                if (target.equals(source))
-                    append = append == "" ? 2 : (append + 1);
-                else
-                    break;
-            }
-        }
-        var filename = imageFile.name.substr(0, imageFile.name.lastIndexOf(".")) + append + imageFile.name.substr(imageFile.name.lastIndexOf("."));
+        var filename = loadFileWithConflictResolution(imageFile.path, getUserDataPath() + "/decals", imageFile.name);
 
         fs.copyFileSync(imageFile.path, getUserDataPath() + "/decals/" + filename);
 
@@ -446,25 +411,7 @@ async function loadWindupSound(customName)
         if (!fs.existsSync(getUserDataPath() + "/windups/"))
             fs.mkdirSync(getUserDataPath() + "/windups/");
 
-        var source = fs.readFileSync(soundFile.path);
-
-        // Ensure that we're not overwriting any existing files with the same name
-        // If the files have the same contents, allows the overwrite
-        // If the files have different contents, add an interating number to the end until it's a unique filename or has the same contents
-        var append = "";
-        if (soundFile.path != getUserDataPath() + "\\windups\\" + soundFile.name)
-        {
-            while (fs.existsSync(getUserDataPath() + "/windups/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."))))
-            {
-                var target = fs.readFileSync(getUserDataPath() + "/windups/" + soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf(".")));
-
-                if (target.equals(source))
-                    append = append == "" ? 2 : (append + 1);
-                else
-                    break;
-            }
-        }
-        var filename = soundFile.name.substr(0, soundFile.name.lastIndexOf(".")) + append + soundFile.name.substr(soundFile.name.lastIndexOf("."));
+        var filename = loadFileWithConflictResolution(soundFile.path, getUserDataPath() + "/windups", soundFile.name);
 
         fs.copyFileSync(soundFile.path, getUserDataPath() + "/windups/" + filename);
 
