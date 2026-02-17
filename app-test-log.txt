@@ -1,0 +1,26 @@
+
+> karasubonk@1.2.6 start
+> electron-forge start
+
+[STARTED] Checking your system
+[STARTED] Checking git exists
+[STARTED] Checking node version
+[STARTED] Checking packageManager version
+[TITLE] Found git@2.30.1.windows.1
+[SUCCESS] Found git@2.30.1.windows.1
+[TITLE] Found node@22.11.0
+[SUCCESS] Found node@22.11.0
+[TITLE] Found npm@11.8.0
+[SUCCESS] Found npm@11.8.0
+[SUCCESS] Checking your system
+[STARTED] Locating application
+[SUCCESS] Locating application
+[STARTED] Loading configuration
+[SUCCESS] Loading configuration
+[STARTED] Preparing native dependencies
+[TITLE] Preparing native dependencies
+[SUCCESS] Preparing native dependencies
+[STARTED] Running generateAssets hook
+[SUCCESS] Running generateAssets hook
+
+

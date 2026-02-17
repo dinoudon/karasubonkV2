@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules/**)",
+      "Write(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules/**)",
+      "Edit(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules/**)",
+      "Glob(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules/**)",
+      "Grep(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules/**)",
+      "Read(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules\\.auto-claude\\specs\\001-split-renderer-js-into-focused-modules/**)",
+      "Write(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules\\.auto-claude\\specs\\001-split-renderer-js-into-focused-modules/**)",
+      "Edit(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude\\worktrees\\tasks\\001-split-renderer-js-into-focused-modules\\.auto-claude\\specs\\001-split-renderer-js-into-focused-modules/**)",
+      "Read(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Write(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Edit(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Glob(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Grep(D:\\Work\\vtuber\\karasubonkV2\\.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

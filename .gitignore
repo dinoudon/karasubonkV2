@@ -12,3 +12,9 @@ out/
 .worktrees/
 .security-key
 logs/security/
+
+# Asset directories created at runtime (should not be in renderer/)
+renderer/throws/
+renderer/impacts/
+renderer/decals/
+renderer/windups/
